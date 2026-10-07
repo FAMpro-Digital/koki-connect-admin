@@ -6,7 +6,9 @@ Une solution FAMpro Digital. Application séparée de Koki Connect, responsive p
 
 Application compilable, formulaires de contenus et gestion des professionnels/boutiques/produits/services/chauffeurs/véhicules/commandes/demandes/courses ; authentification Supabase et MFA TOTP ; permissions serveur RLS ; journal d'écritures atomique ; statistiques SQL sur la base réelle. En l'absence de serveur configuré, l'application affiche un aperçu sans données et sans accès d'écriture.
 
-**Pas encore en production :** le projet Supabase Koki Connect n'existe pas, la base n'est pas provisionnée, le premier administrateur n'est pas désigné et l'application publique n'est pas connectée au flux. Aucun compte ni donnée du projet FAMpro Évents n'est modifié. Les connexions réelles, MFA, transferts de photos et synchronisation entre appareils doivent encore être vérifiés sur le projet distant avant déploiement.
+**Déployé :** https://koki-connect-admin.vercel.app — backend Supabase Koki Connect (`qsbmzzbiztfqysstepxm`) dans l'organisation FAMpro Évents, région eu-west-2, forfait Free confirmé par le propriétaire. Schéma et durcissement appliqués via MCP, contrôles RLS et flux public vérifiés sur le serveur réel. Invitation envoyée à l'adresse désignée par le propriétaire et rôle superadmin provisionné. Le propriétaire doit définir son mot de passe et enrôler son application TOTP pour utiliser les données. Le parcours authentifié complet et les uploads sont à confirmer avec lui ; aucun code OTP personnel n'est demandé ou conservé par l'agent.
+
+L'application publique reste intégralement inchangée et ne consomme pas encore ce backend. Son branchement au flux préparé doit être validé séparément. Le dépôt GitHub est privé : https://github.com/mourtadafam-star/koki-connect-admin. Vercel ne pouvant pas lire ce nouveau dépôt avec son installation Git actuelle, le déploiement a été effectué avec le bundle statique local vérifié. Les prochains push ne redéploient pas automatiquement Vercel tant que son accès au dépôt n'est pas raccordé. Les variables Vercel ne contiennent que l'URL du projet et sa clé publishable.
 
 ## Démarrage
 
@@ -16,7 +18,7 @@ Copier `.env.example` en `.env` et renseigner uniquement l'URL du projet et sa c
 
 ## Backend dédié
 
-Créer un projet Supabase « Koki Connect » dans l'organisation FAMpro Évents, après vérification du prix affiché dans Supabase. Utiliser un projet vide : `supabase/schema.sql` est un bootstrap transactionnel, pas une migration à appliquer aveuglément sur une base existante. Le préparer en migration CLI avant application en production. Configurer les URL Auth et désactiver l'inscription publique dans ce projet tant que le portail public n'a pas de comptes.
+Le projet Supabase « Koki Connect » a été créé dans FAMpro Évents. L'inscription libre et les connexions anonymes sont désactivées. La redirection des invitations pointe vers le site Admin. Utiliser un projet vide : `supabase/schema.sql` est un bootstrap transactionnel, pas une migration à appliquer aveuglément sur une base existante. La version déployée est enregistrée dans les migrations distantes `koki_admin_initial` et `lock_internal_auto_rls_function`. Conserver ce bootstrap pour reproduire le schéma dans une base vide. Configurer les URL Auth et désactiver l'inscription publique dans ce projet tant que le portail public n'a pas de comptes.
 
 Créer le premier utilisateur via Supabase Auth, puis ajouter son UUID vérifié à koki_admin_members avec role=superadmin, depuis l'interface SQL autorisée. Ne pas déduire le propriétaire d'une adresse e-mail mentionnée dans une autre demande. Les administrateurs suivants sont également provisionnés hors navigateur. Enrôler une application TOTP puis vérifier le code : toutes les opérations protégées exigent aal2 côté base. Les sessions restent uniquement en mémoire ; une recharge demande une nouvelle connexion.
 
@@ -37,3 +39,13 @@ Les statistiques de publications, commerces et activités métier reflètent la 
 ## Vérification avant déploiement
 
 Tests SQL : anonyme refusé en écriture, brouillons invisibles, MFA obligatoire, rôle non membre refusé, éditeur limité, manager sans écriture éditoriale, pas d'auto-promotion, journal non effaçable, campagnes expirées masquées et droits retirés immédiatement après désactivation. Tests mobile sur navigateur. Ensuite : appliquer la migration sur staging, tester utilisateurs réels et MFA/enrôlement, lancer Supabase Advisors, tester stockage et session après révocation, vérifier les politiques au moyen de comptes distincts, puis déployer. Ne pas déclarer ces vérifications distantes réussies avant provisioning.
+
+## Rapport de vérification du 7 octobre 2026
+
+- Tests métier et règles PostgreSQL embarquées : 4 tests réussis, couvrant les contrôles énumérés ci-dessus.
+- Serveur réel : flux public HTTP 200 vide ; lecture des comptes/métiers et écriture de contenus sans authentification HTTP 401 / permission denied. Sans MFA, allowed(read)=false.
+- Test transactionnel du compte admin avec aal2 : création et modification autorisées, deux événements au journal ; rollback intégral des données de test.
+- Supabase Advisors : aucune alerte sur les tables/politiques/fonctions après correction de la fonction automatique rls_auto_enable. Un avertissement Auth demeure : la vérification des mots de passe compromis n'est pas activée (fonction non comprise dans le forfait Free). Ne pas activer de forfait payant sans instruction. La MFA TOTP reste obligatoire pour l'administration.
+- npm audit : aucune vulnérabilité connue signalée ; compilation avec le backend configuré réussie (bundle JS environ 62 Ko gzip).
+- Page déployée : HTTP 200, CSP/no-referrer/nosniff/frame DENY présents, console sans erreur ; responsive vérifié à 320/390 px. Les écrans de gestion sans connexion ne sont jamais accessibles dans la version connectée.
+- Limites de vérification : pas de connexion sous le mot de passe personnel du propriétaire, pas de manipulation de son OTP ; pas d'essai d'upload sous sa session, ni de lecture public/Admin synchronisée puisque le public n'a pas été modifié.
