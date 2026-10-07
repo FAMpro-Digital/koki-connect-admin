@@ -2,7 +2,8 @@ import {createClient} from '@supabase/supabase-js';
 const url=import.meta.env.VITE_SUPABASE_URL,key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 export const configured=Boolean(url&&key);
 if(key&&!(key.startsWith('sb_publishable_')))throw Error('Utilisez uniquement une clé Supabase publishable. Les clés secrètes sont interdites.');
-export const db=configured?createClient(url,key,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}}):null;
+export const onboarding=['invite','recovery'].includes(new URLSearchParams(location.hash.slice(1)).get('type'));
+export const db=configured?createClient(url,key,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 export async function result(query){const {data,error}=await query;if(error)throw Error('Opération refusée ou serveur indisponible : '+error.message);return data;}
 export async function identity(){const {data,error}=await db.auth.getUser();if(error||!data.user)throw Error('Connexion requise.');const membership=await result(db.from('koki_admin_members').select('role,enabled').eq('user_id',data.user.id).maybeSingle());if(!membership?.enabled)throw Error('Ce compte n’est pas autorisé à administrer Koki Connect.');const aal=await db.auth.mfa.getAuthenticatorAssuranceLevel();if(aal.error)throw aal.error;return {user:data.user,role:membership.role,aal:aal.data.currentLevel};}
 export async function list(table,filter={}){let q=db.from(table).select('*').order('updated_at',{ascending:false}).limit(50);for(const [k,v]of Object.entries(filter))q=q.eq(k,v);return result(q);}
