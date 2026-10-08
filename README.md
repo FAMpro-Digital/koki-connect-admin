@@ -8,7 +8,7 @@ Application compilable, formulaires de contenus et gestion des professionnels/bo
 
 **Déployé :** https://koki-connect-admin.vercel.app — backend Supabase Koki Connect (`qsbmzzbiztfqysstepxm`) dans l'organisation FAMpro Évents, région eu-west-2, forfait Free confirmé par le propriétaire. Schéma et durcissement appliqués via MCP, contrôles RLS et flux public vérifiés sur le serveur réel. Invitation envoyée à l'adresse désignée par le propriétaire et rôle superadmin provisionné. Le propriétaire doit définir son mot de passe et enrôler son application TOTP pour utiliser les données. Le parcours authentifié complet et les uploads sont à confirmer avec lui ; aucun code OTP personnel n'est demandé ou conservé par l'agent.
 
-L'application publique reste intégralement inchangée et ne consomme pas encore ce backend. Son branchement au flux préparé doit être validé séparément. Le dépôt GitHub est privé : https://github.com/mourtadafam-star/koki-connect-admin. Vercel ne pouvant pas lire ce nouveau dépôt avec son installation Git actuelle, le déploiement a été effectué avec le bundle statique local vérifié. Les prochains push ne redéploient pas automatiquement Vercel tant que son accès au dépôt n'est pas raccordé. Les variables Vercel ne contiennent que l'URL du projet et sa clé publishable.
+Le portail public consomme maintenant le flux partagé de contenus publiés. Les transactions commerciales et de transport ne sont pas encore raccordées au serveur. Le dépôt GitHub est privé : https://github.com/mourtadafam-star/koki-connect-admin. Vercel ne pouvant pas lire ce nouveau dépôt avec son installation Git actuelle, le déploiement a été effectué avec le bundle statique local vérifié. Les prochains push ne redéploient pas automatiquement Vercel tant que son accès au dépôt n'est pas raccordé. Les variables Vercel ne contiennent que l'URL du projet et sa clé publishable.
 
 ## Démarrage
 
@@ -48,7 +48,7 @@ Tests SQL : anonyme refusé en écriture, brouillons invisibles, MFA obligatoire
 - Supabase Advisors : aucune alerte sur les tables/politiques/fonctions après correction de la fonction automatique rls_auto_enable. Un avertissement Auth demeure : la vérification des mots de passe compromis n'est pas activée (fonction non comprise dans le forfait Free). Ne pas activer de forfait payant sans instruction. La MFA TOTP reste obligatoire pour l'administration.
 - npm audit : aucune vulnérabilité connue signalée ; compilation avec le backend configuré réussie (bundle JS environ 62 Ko gzip).
 - Page déployée : HTTP 200, CSP/no-referrer/nosniff/frame DENY présents, console sans erreur ; responsive vérifié à 320/390 px. Les écrans de gestion sans connexion ne sont jamais accessibles dans la version connectée.
-- Limites de vérification : pas de connexion sous le mot de passe personnel du propriétaire, pas de manipulation de son OTP ; pas d'essai d'upload sous sa session, ni de lecture public/Admin synchronisée puisque le public n'a pas été modifié.
+- Limites de vérification : pas de connexion sous le mot de passe personnel du propriétaire, pas de manipulation de son OTP ; pas d'essai d'upload sous sa session, le flux public a été vérifié sans contenu publié, mais aucune création sous le compte personnel du propriétaire n'a été effectuée.
 
 ## Interface et synchronisation éditoriale — 8 octobre 2026
 

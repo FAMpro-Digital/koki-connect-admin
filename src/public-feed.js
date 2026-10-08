@@ -1,4 +1,4 @@
-// Adaptateur à brancher au portail PUBLIC après validation de son propriétaire.
+// Adaptateur SDK disponible pour les futurs clients. Le portail statique utilise assets/portail/feed.js.
 // Même base et mêmes règles serveur ; aucune clé secrète ou droit administrateur.
 import {createClient} from '@supabase/supabase-js';
 export async function publicFeed(url,publishableKey){
