@@ -2,6 +2,7 @@ import {createClient} from '@supabase/supabase-js';
 const url=import.meta.env.VITE_SUPABASE_URL,key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 export const configured=Boolean(url&&key);
 if(key&&!(key.startsWith('sb_publishable_')))throw Error('Utilisez uniquement une clé Supabase publishable. Les clés secrètes sont interdites.');
+export const authLinkError=new URLSearchParams(location.hash.slice(1)).has('error')||new URLSearchParams(location.hash.slice(1)).has('error_code');
 export const onboarding=['invite','recovery'].includes(new URLSearchParams(location.hash.slice(1)).get('type'));
 export const db=configured?createClient(url,key,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 export async function result(query){const {data,error}=await query;if(error)throw Error('Opération refusée ou serveur indisponible : '+error.message);return data;}
