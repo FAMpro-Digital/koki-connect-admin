@@ -49,3 +49,9 @@ Tests SQL : anonyme refusé en écriture, brouillons invisibles, MFA obligatoire
 - npm audit : aucune vulnérabilité connue signalée ; compilation avec le backend configuré réussie (bundle JS environ 62 Ko gzip).
 - Page déployée : HTTP 200, CSP/no-referrer/nosniff/frame DENY présents, console sans erreur ; responsive vérifié à 320/390 px. Les écrans de gestion sans connexion ne sont jamais accessibles dans la version connectée.
 - Limites de vérification : pas de connexion sous le mot de passe personnel du propriétaire, pas de manipulation de son OTP ; pas d'essai d'upload sous sa session, ni de lecture public/Admin synchronisée puisque le public n'a pas été modifié.
+
+## Interface et synchronisation éditoriale — 8 octobre 2026
+
+Le tableau de bord reprend le menu vert, la bannière de Koki, les cartes colorées, la répartition des publications, les dernières publications et les événements à venir. Les données de publications sont paginées, sans plafond de 50 pour les compteurs. Recherche des titres disponible dans l’en-tête. Les cartes liées aux données non mesurées affichent « — ».
+
+Le portail utilisateur lit désormais le même flux Supabase de contenus publiés. Actualités, annonces, publicités, événements, sports, opportunités et informations utiles sont synchronisés ; les médias restent privés avec des liens temporaires. Les transactions publiques commerce/transport restent en démonstration locale. La nouvelle interface a été vérifiée sur aperçu local sans données à 320 et 390 pixels ; les parcours personnels MFA et édition restent à vérifier sous le compte du propriétaire.
