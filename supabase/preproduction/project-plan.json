@@ -1,0 +1,19 @@
+{
+  "name":"Koki Connect TEST — Préproduction",
+  "organization":"FAMpro Évents (à confirmer avant création)",
+  "region":"eu-west-2",
+  "requiredPlan":"free",
+  "maximumApprovedMonthlyCost":0,
+  "blockedProjectRefs":["qsbmzzbiztfqysstepxm","paegdthtusbwxuarhacb"],
+  "testProjectRef":null,
+  "status":"prepared_not_created",
+  "installOrder":["schema.sql","proposals/commerce-transport-foundation.sql","proposals/phase2-transactions.sql"],
+  "auth":{"emailConfirmation":true,"anonymousSignIn":false,"adminMfa":"totp_aal2_required","redirects":"exact_preview_urls_only"},
+  "storage":{"bucket":"koki-media","public":false,"maximumBytes":1048576,"mimeTypes":["image/jpeg","image/png","image/webp"]},
+  "accounts":["TEST client","TEST chauffeur","TEST commerçant","TEST prestataire","TEST administrateur"],
+  "provisioning":"Supabase Auth uniquement, mots de passe personnels, aucun secret dans les fichiers",
+  "emailDelivery":"SMTP de test contrôlé à valider, aucun service payant automatique",
+  "fixtures":{"fictional":true,"namesPrefix":"TEST","phonePrefix":"+999","position":{"latitude":15.56,"longitude":-16.21},"rates":{"Moto":{"base_fcfa":200,"per_km_fcfa":100},"Taxi":{"base_fcfa":500,"per_km_fcfa":250},"Voiture":{"base_fcfa":700,"per_km_fcfa":300},"Minicar":{"base_fcfa":1000,"per_km_fcfa":400}}},
+  "productionChanges":false,
+  "deployed":false
+}

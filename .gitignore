@@ -4,3 +4,23 @@ dist/
 .env.*
 !.env.example
 work/
+
+# Local credentials, generated evidence and build outputs are not source backups.
+.vercel/
+.env
+.env.*
+!.env.example
+node_modules/
+artifacts/
+coverage/
+test-results/
+playwright-report/
+playwright/.auth/
+.auth/
+storageState*.json
+*.log
+*.pem
+*.key
+*.dump
+*.backup
+.DS_Store
