@@ -1,0 +1,51 @@
+name: Development tests and build
+
+on:
+  push:
+    branches: [develop/phases-2-6]
+  pull_request:
+    branches: [develop/phases-2-6]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: development-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/develop/phases-2-6' || github.base_ref == 'develop/phases-2-6'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CI: 'true'
+      VITE_BUSINESS_RPC_ENABLED: 'false'
+      VITE_SUPABASE_URL: ''
+      VITE_SUPABASE_PUBLISHABLE_KEY: ''
+    steps:
+      - name: Checkout reviewed development branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify development-only deployment guard
+        run: |
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const config = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
+          assert.equal(config.git.deploymentEnabled['develop/phases-2-6'], false);
+          JS
+      - name: Test and build with loopback-only networking
+        run: |
+          sudo unshare --net bash -euc '
+            ip link set lo up
+            exec runuser -u "$1" -- bash -euc "npm test; npm run build"
+          ' -- "$(id -un)"
