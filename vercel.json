@@ -25,5 +25,10 @@
         }
       ]
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "develop/phases-2-6": false
+    }
+  }
 }
