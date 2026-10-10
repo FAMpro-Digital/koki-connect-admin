@@ -18,4 +18,4 @@ export async function media(file){if(!file)return null;if(!isProcessedImage(file
 export async function imageURL(path){const data=await result(db.storage.from('koki-media').createSignedUrl(path,120));return data.signedUrl;}
 
 export const recoveryRedirect=import.meta.env.VITE_ADMIN_PREVIEW_URL||location.origin;
-export const publicApplicationURL=import.meta.env.VITE_PUBLIC_PREVIEW_URL||(import.meta.env.VITE_BUSINESS_RPC_ENABLED==='true'?null:'https://koki-connect-wwcw.vercel.app/');
+export const publicApplicationURL=import.meta.env.VITE_PUBLIC_PREVIEW_URL||(import.meta.env.VITE_BUSINESS_RPC_ENABLED==='true'?null:'https://koki-connect.vercel.app/');
