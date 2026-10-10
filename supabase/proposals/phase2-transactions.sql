@@ -57,6 +57,11 @@ create table koki_private.ride_quotes(
  ride_id uuid references public.koki_records(id)
 );
 revoke all on koki_private.ride_quotes from public,anon,authenticated;
+-- Recherche de chauffeurs limitée par compte : empêche de retrouver une position par appels répétés.
+create table koki_private.nearby_lookups(actor_id uuid not null,created_at timestamptz not null default now());
+create index koki_nearby_lookups_actor on koki_private.nearby_lookups(actor_id,created_at desc);
+alter table koki_private.nearby_lookups enable row level security;
+revoke all on koki_private.nearby_lookups from public,anon,authenticated;
 create index ride_quotes_expiry on koki_private.ride_quotes(expires_at);
 create table koki_private.business_keys(
  actor_id uuid not null references auth.users(id) on delete restrict,
@@ -195,11 +200,19 @@ begin
  if command='nearby_drivers' then
    perform koki_private.business_keys_allowed(input,array['category','start']);
    if not koki_private.business_point(input->'start') or input->>'category' is null or input->>'category' not in ('Moto','Taxi','Voiture','Minicar') then raise exception 'Recherche invalide';end if;
+   -- 10 recherches par minute et 60 par heure ; distance calculée sur une position arrondie (~500 m),
+   -- sinon la frontière des 10 km permettrait de trianguler la position exacte du chauffeur.
+   perform pg_advisory_xact_lock(hashtextextended('nearby:'||actor::text,0));
+   if (select count(*) from koki_private.nearby_lookups l where l.actor_id=actor and l.created_at>now()-interval '1 minute')>=10
+    or (select count(*) from koki_private.nearby_lookups l where l.actor_id=actor and l.created_at>now()-interval '1 hour')>=60 then
+     raise exception 'Trop de recherches. Patientez quelques minutes.';end if;
+   delete from koki_private.nearby_lookups l where l.actor_id=actor and l.created_at<now()-interval '1 day';
+   insert into koki_private.nearby_lookups(actor_id) values(actor);
    return coalesce((select jsonb_agg(jsonb_build_object('driver_id',x.driver_id,'vehicle_id',x.vehicle_id,'name',x.name,'category',x.category,'proximity','À proximité (moins de 10 km)')) from
    (select drv.id driver_id,veh.id vehicle_id,drv.payload->>'nom' name,veh.payload->>'categorie' category from public.koki_records drv join public.koki_records veh on veh.parent_id=drv.id and veh.kind='vehicules' and veh.statut='Actif'
    where drv.kind='chauffeurs' and drv.statut='Disponible' and veh.payload->>'categorie'=input->>'category'
     and (drv.payload->>'position_updated_at')::timestamptz>now()-interval '15 minutes'
-    and koki_private.business_point(drv.payload->'position') and koki_private.business_distance(input->'start',drv.payload->'position')<=10
+    and koki_private.business_point(drv.payload->'position') and koki_private.business_distance(input->'start',jsonb_build_object('latitude',round((drv.payload->'position'->>'latitude')::numeric/0.005)*0.005,'longitude',round((drv.payload->'position'->>'longitude')::numeric/0.005)*0.005))<=10 and drv.owner_id<>actor
     and not exists(select 1 from public.koki_records c where c.kind='courses' and c.driver_id=drv.id and c.statut in ('En attente','Acceptée','Chauffeur en route','Course en cours'))
     order by drv.id,veh.id limit 30)x),'[]'::jsonb);
  end if;
