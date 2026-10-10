@@ -36,6 +36,15 @@ test('PostgreSQL natif : concurrence réelle entre connexions isolées', {timeou
  await t.test('annulation simultanée répétée : restitution de stock une seule fois',()=>scenario(async({root,a,b,f})=>{
   const created=await rpc(a,'create_order',order(f,2));await actor(b,testActors.client);const input={request_id:key(),id:created.id,next:'Annulée',revision:created.revision};await Promise.all([rpc(a,'transition',input),rpc(b,'transition',input)]);assert.equal((await root.query('select payload from koki_records where id=$1',[f.product.id])).rows[0].payload.stock,2);
  }));
+ const merchantInput=(row)=>({id:row.id,revision:row.revision,request_id:key(),name:'TEST Commerce',profile:'Commerçant',category:'Alimentation',phone:'+221770000000',address:'TEST Koki marché',location:point,hours:'Lundi 8h–18h',description:'TEST fiche commerçant pour concurrence',photos:[]});
+ await t.test('deux corrections de fiche : une seule version acceptée',()=>scenario(async({a,b,f})=>{
+  await actor(a,testActors.merchant);await actor(b,testActors.merchant);const row=await rpc(a,'get',{id:f.merchant.id});
+  const results=await Promise.allSettled([rpc(a,'submit_merchant',merchantInput(row)),rpc(b,'submit_merchant',{...merchantInput(row),name:'TEST Autre version'})]);assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(results.filter(r=>r.status==='rejected').length,1);assert.equal((await rpc(a,'get',{id:row.id})).statut,'En attente');
+ }));
+ await t.test('validation et correction simultanées : aucune validation de contenu périmé',()=>scenario(async({a,b,f})=>{
+  await actor(a,testActors.merchant);const row=await rpc(a,'get',{id:f.merchant.id});const submitted=await rpc(a,'submit_merchant',merchantInput(row));await actor(b,testActors.admin,'aal2');
+  const results=await Promise.allSettled([rpc(a,'submit_merchant',{...merchantInput(submitted),name:'TEST Correction'}),rpc(b,'review_merchant',{request_id:key(),id:row.id,revision:submitted.revision,decision:'approve'})]);assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(results.filter(r=>r.status==='rejected').length,1);const saved=await rpc(a,'get',{id:row.id});assert.ok(saved.statut==='En attente'&&saved.payload.nom==='TEST Correction'||saved.statut==='Actif'&&saved.payload.nom==='TEST Commerce');
+ }));
  await t.test('édition catalogue concurrente à une commande : pas de blocage croisé',()=>scenario(async({a,b,f})=>{
   await actor(b,testActors.merchant);await Promise.all([rpc(a,'create_order',order(f,1)),rpc(b,'save_shop',{request_id:key(),id:f.shop.id,revision:f.shop.revision,parent_id:f.merchant.id,name:'TEST shop modifiée',address:'TEST Koki'})]);
  }));
