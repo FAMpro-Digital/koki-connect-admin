@@ -1,4 +1,5 @@
 import {statusSteps,filterBusinessRows} from './business-state.js';
+import {positionField,coordonneesValides} from './position-gps.js';
 import {vehicles,nextStatus} from './business-client.js';
 import {processImage} from './image-processing.js';
 export const node=(tag,text)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e;};
@@ -42,20 +43,21 @@ export function imageSelection(host,status,{label='Photo du besoin (facultative,
 export function merchantEditor(host,api,profile,status,{upload,onSaved=()=>{}}={}){
  const area=node('section');area.className='business-card';host.append(area);const p=profile?.payload||{};area.append(node('p','Chaque envoi crée une fiche En attente. Une modification retire temporairement la fiche du catalogue jusqu’à sa validation. Vos coordonnées commerciales seront visibles après approbation.'));
  const controls=form(area,'Ma fiche commerçant',[
- ['name','Nom commercial','text',p.nom||''],['profile','Activité','text',p.type==='Prestataire de services'?'Les deux':p.type||'Commerçant',['Commerçant','Les deux']],['category','Catégorie','text',p.categorie||''],['phone','Téléphone WhatsApp international (+221…)','tel',p.telephone||''],['address','Adresse / localisation du commerce','text',p.adresse||''],['latitude','Latitude','number',p.localisation?.latitude??''],['longitude','Longitude','number',p.localisation?.longitude??''],['hours','Horaires (jours et heures)','textarea',p.horaires||''],['description','Description du commerce','textarea',p.description||'']
+ ['name','Nom commercial','text',p.nom||''],['profile','Activité','text',p.type==='Prestataire de services'?'Les deux':p.type||'Commerçant',['Commerçant','Les deux']],['category','Catégorie','text',p.categorie||''],['phone','Téléphone WhatsApp international (+221…)','tel',p.telephone||''],['address','Adresse / localisation du commerce','text',p.adresse||''],['hours','Horaires (jours et heures)','textarea',p.horaires||''],['description','Description du commerce','textarea',p.description||'']
  ],async x=>{
+   positionCommerce();
    const operation='merchant:'+(profile?.id||'new');if(api.pending().some(v=>v.operation===operation))throw Error('Reprenez la demande interrompue avant un nouvel envoi.');
    if(saved.filter(item=>item.keep.checked).length+selections.filter(selection=>selection.input.files.length).length>5)throw Error('Conservez cinq photos maximum.');const paths=[];for(const item of saved)if(item.keep.checked)paths.push(item.path);
    for(const selection of selections){const file=await selection.get();if(file){if(!upload)throw Error('Téléversement indisponible.');if(!uploaded.has(file))uploaded.set(file,await upload(file));paths.push(uploaded.get(file));}}
    if(paths.length>5)throw Error('Conservez cinq photos maximum.');
-   const input={name:x.name.value,profile:x.profile.value,category:x.category.value,phone:x.phone.value,address:x.address.value,location:{latitude:Number(x.latitude.value),longitude:Number(x.longitude.value)},hours:x.hours.value,description:x.description.value,photos:paths};
+   const input={name:x.name.value,profile:x.profile.value,category:x.category.value,phone:x.phone.value,address:x.address.value,location:positionCommerce(),hours:x.hours.value,description:x.description.value,photos:paths};
    if(profile)Object.assign(input,{id:profile.id,revision:profile.revision});
    await api.run('submit_merchant',input,operation);status.textContent='Fiche enregistrée — En attente de validation.';await onSaved();
  },status);
- for(const [key,min,max]of [['latitude',-90,90],['longitude',-180,180]]){const i=controls.inputs[key];i.min=String(min);i.max=String(max);i.step='any';i.inputMode='decimal';}
+ const gps={};positionField(controls.f,gps,{latitude:p.localisation?.latitude,longitude:p.localisation?.longitude});
+ const positionCommerce=()=>{const latitude=gps.latitude.value===''?NaN:Number(gps.latitude.value),longitude=gps.longitude.value===''?NaN:Number(gps.longitude.value);if(!coordonneesValides(latitude,longitude))throw Error('Ajoutez la position GPS du commerce : placez-vous au commerce et appuyez sur « Utiliser ma position actuelle (GPS) ».');return {latitude,longitude};};
  controls.inputs.name.maxLength=180;controls.inputs.category.maxLength=100;controls.inputs.phone.maxLength=16;controls.inputs.address.maxLength=500;controls.inputs.hours.maxLength=500;controls.inputs.description.minLength=10;controls.inputs.description.maxLength=2000;
  controls.b.textContent='Soumettre ma fiche';
- action(area,'Utiliser ma position pour ce commerce',async()=>{const position=await window.obtenirPositionActuelle();controls.inputs.latitude.value=position.coords.latitude;controls.inputs.longitude.value=position.coords.longitude;status.textContent='Position renseignée. Vérifiez qu’elle correspond au commerce.';},status);
  const saved=[];for(const path of p.photos||[]){const keep=field(area,'Conserver cette photo','checkbox');keep.checked=true;keep.required=false;saved.push({path,keep});savedImage(area,path,api);}
  const selections=[],uploaded=new Map();area.append(node('p','Photos facultatives : cinq maximum, 10 Mo par photo avant compression.'));
  for(let i=0;i<5;i++)selections.push(imageSelection(controls.f,status,{label:'Photo '+(i+1)+' (facultative)'}));controls.f.append(controls.b);
