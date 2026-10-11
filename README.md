@@ -16,6 +16,10 @@ Node 22.12+ (ou Node 24). `npm ci`, puis `npm run dev`. `npm test` exécute les 
 
 Copier `.env.example` en `.env` et renseigner uniquement l'URL du projet et sa clé **publishable** (`sb_publishable_…`). Ne jamais mettre une clé secret/service_role dans une variable VITE : ces variables sont publiques. Aucun secret administrateur n'est nécessaire dans le navigateur.
 
+## Développement avec Supabase local (gratuit)
+
+Base, Auth, Storage et e-mails de test dans Docker, avec données fictives : `supabase start` puis `npm run dev:local`. Aucun projet en ligne n'est utilisé ni modifié. Mode d'emploi complet : [docs/supabase-local.md](docs/supabase-local.md).
+
 ## Backend dédié
 
 Le projet Supabase « Koki Connect » a été créé dans FAMpro Évents. L'inscription libre et les connexions anonymes sont désactivées. La redirection des invitations pointe vers le site Admin. Utiliser un projet vide : `supabase/schema.sql` est un bootstrap transactionnel, pas une migration à appliquer aveuglément sur une base existante. La version déployée est enregistrée dans les migrations distantes `koki_admin_initial` et `lock_internal_auto_rls_function`. Conserver ce bootstrap pour reproduire le schéma dans une base vide. Configurer les URL Auth et désactiver l'inscription publique dans ce projet tant que le portail public n'a pas de comptes.

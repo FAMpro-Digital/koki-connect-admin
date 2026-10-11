@@ -1,0 +1,26 @@
+{
+  "target": "euvxtwmyoihnutifshay",
+  "blocked": [
+    "qsbmzzbiztfqysstepxm",
+    "paegdthtusbwxuarhacb"
+  ],
+  "remoteApplied": false,
+  "bundle": "supabase/preproduction/koki-test-poursuite-phase6.sql",
+  "bundleSha256": "f8564187571bca31e72f75d38890cc5f068c8129cc3e1f1f096d4f4a8a6c83b1",
+  "files": [
+    {
+      "file": "supabase/proposals/phase2-transactions.sql",
+      "sha256": "9141a7e0f10654d9eb3dbb1019fce5a431994007af76c5f4ec5c2e8c481c23fb"
+    },
+    {
+      "file": "supabase/proposals/merchant-profiles.sql",
+      "sha256": "71a3f871af3dac3311a711f351adfd439f8279c4d5991d780654bacef55860d3"
+    },
+    {
+      "file": "supabase/proposals/commerce-modernisation.sql",
+      "sha256": "29a3276ed82dab09818b127bd66b97092aa864578b081ce7eb18ae6c06080173"
+    }
+  ],
+  "expectedBaseline": "schema.sql + proposals/commerce-transport-foundation.sql, base vide",
+  "rollback": "supabase/preproduction/retour-arriere-phase6.sql"
+}

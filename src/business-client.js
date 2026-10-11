@@ -1,4 +1,4 @@
-const reads=new Set(['catalog','history','get','quote','nearby_drivers','ride_contacts']);
+const reads=new Set(['catalog','history','get','quote','nearby_drivers','ride_contacts','localites','admin_stats','admin_queue','admin_records']);
 export const vehicles=['Moto','Taxi','Voiture','Minicar'];
 export function nextStatus(row){const chain=row.kind==='courses'?['En attente','Acceptée','Chauffeur en route','Course en cours','Terminée']:row.kind==='commandes'?(row.payload.mode==='retrait'?['Commande reçue','Confirmée','Préparation','Prête au retrait','Retirée']:['Commande reçue','Confirmée','Préparation','En livraison','Livrée']):['Demande envoyée','Acceptée','Prestataire en route','Service en cours','Terminé'];return chain[chain.indexOf(row.statut)+1]||null;}
 export function createBusinessClient(db,{enabled=false,storage=null,uuid=()=>crypto.randomUUID(),notify=()=>{}}={}){
