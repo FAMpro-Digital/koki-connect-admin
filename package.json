@@ -8,7 +8,10 @@
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --test --test-concurrency=1 tests/*.test.js",
-    "postbuild": "node scripts/package-security-headers.mjs"
+    "postbuild": "node scripts/package-security-headers.mjs",
+    "dev:local": "vite --mode supabase-local --host 127.0.0.1",
+    "supabase:migrations": "node scripts/build-local-migrations.mjs",
+    "supabase:migrations:check": "node scripts/build-local-migrations.mjs --check"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.117.3"

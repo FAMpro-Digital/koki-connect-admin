@@ -1,9 +1,11 @@
 import {isProcessedImage,inspectImage,MAX_OUTPUT} from './image-processing.js';
 import {createBusinessClient} from './business-client.js';
 import {createClient} from '@supabase/supabase-js';
+import {checkBackendTarget} from './backend-guard.js';
 const url=import.meta.env.VITE_SUPABASE_URL,key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-export const configured=Boolean(url&&key);
-if(key&&!(key.startsWith('sb_publishable_')))throw Error('Utilisez uniquement une clé Supabase publishable. Les clés secrètes sont interdites.');
+// Refuse une base locale hors « npm run dev:local » et toute base distante en mode local.
+export const target=checkBackendTarget({url,key,mode:import.meta.env.MODE,dev:import.meta.env.DEV});
+export const configured=target.configured;
 export const authLinkError=new URLSearchParams(location.hash.slice(1)).has('error')||new URLSearchParams(location.hash.slice(1)).has('error_code');
 export const onboarding=['invite','recovery'].includes(new URLSearchParams(location.hash.slice(1)).get('type'));
 export const db=configured?createClient(url,key,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:true}}):null;
