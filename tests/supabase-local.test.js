@@ -13,7 +13,7 @@ const as=async(db,sql)=>(await db.query(sql)).rows;
 test('migrations locales : générées depuis les sources, dans l’ordre validé, à jour',async()=>{
  const generated=await localMigrations();
  assert.deepEqual(generated.map(m=>m.name),[...generated.map(m=>m.name)].sort());
- assert.deepEqual(migrationSources.filter(m=>m.file).map(m=>m.file),['supabase/preproduction/fresh-project-check.sql','supabase/schema.sql','supabase/proposals/commerce-transport-foundation.sql','supabase/proposals/phase2-transactions.sql','supabase/proposals/merchant-profiles.sql']);
+ assert.deepEqual(migrationSources.filter(m=>m.file).map(m=>m.file),['supabase/preproduction/fresh-project-check.sql','supabase/schema.sql','supabase/proposals/commerce-transport-foundation.sql','supabase/proposals/phase2-transactions.sql','supabase/proposals/merchant-profiles.sql','supabase/proposals/commerce-modernisation.sql']);
  for(const m of generated){assert.equal(await file('supabase/migrations/'+m.name),m.sql,m.name+' doit être régénéré (node scripts/build-local-migrations.mjs)');assert.doesNotMatch(m.sql,/^\s*(begin|commit);\s*$/m);}
 });
 test('Supabase local : migrations + données fictives, flux public et commandes métier',async()=>{
@@ -21,15 +21,15 @@ test('Supabase local : migrations + données fictives, flux public et commandes 
  try{
   await supabaseLike(db);await install(db);await db.query(await file('supabase/seed.sql'));
   assert.deepEqual((await as(db,'select label from koki_private.test_environment')).map(r=>r.label),['KOKI TEST']);
-  assert.equal((await as(db,'select count(*)::int n from auth.users'))[0].n,5);
+  assert.equal((await as(db,'select count(*)::int n from auth.users'))[0].n,6);
   assert.ok((await as(db,"select phone from auth.users where phone is not null")).every(r=>r.phone.startsWith('999')));
   assert.equal((await as(db,'select count(*)::int n from auth.users where encrypted_password is not null'))[0].n,0);
   assert.deepEqual(await as(db,'select role from public.koki_admin_members'),[{role:'superadmin'}]);
   const records=await as(db,"select kind,statut,payload->>'nom' nom,owner_id::text owner from public.koki_records order by kind,payload->>'nom'");
   assert.ok(records.length>=7);assert.ok(records.every(r=>r.nom.startsWith('TEST')));
   assert.deepEqual(records.filter(r=>r.kind==='chauffeurs').map(r=>r.statut),['Disponible']);
-  assert.deepEqual(records.filter(r=>r.kind==='professionnels').map(r=>r.statut),['Actif','Actif']);
-  assert.equal(records.filter(r=>r.kind==='produits').length,2);
+  assert.deepEqual(records.filter(r=>r.kind==='professionnels').map(r=>r.statut).sort(),['Actif','Actif','En attente']);
+  assert.equal(records.filter(r=>r.kind==='produits').length,3);assert.deepEqual(records.filter(r=>r.kind==='boutiques').map(r=>r.statut).sort(),['Actif','À valider']);
   assert.deepEqual((await as(db,'select category,base_fcfa,per_km_fcfa from public.koki_transport_rates where active order by base_fcfa')).map(r=>[r.category,r.base_fcfa,r.per_km_fcfa]),[['Moto',200,100],['Taxi',500,250],['Voiture',700,300],['Minicar',1000,400]]);
   // Le flux public (anonyme) ne contient que des contenus publiés : jamais le brouillon.
   await db.query('set role anon');const feed=(await as(db,'select public.koki_public_feed() f'))[0].f;await db.query('reset role');
@@ -44,6 +44,11 @@ test('Supabase local : migrations + données fictives, flux public et commandes 
   const nearby=(await as(db,`select public.koki_business('nearby_drivers','{"start":{"latitude":15.561,"longitude":-16.211},"category":"Taxi"}'::jsonb) r`))[0].r;
   assert.equal(nearby.length,1);assert.equal(nearby[0].name,'TEST Chauffeur');assert.ok(!JSON.stringify(nearby).includes('15.56'));
   await db.query('reset role');
+  // Catalogue Commerces & Services fictif : boutique validée et ses offres ; éléments en attente invisibles.
+  await db.query('set role anon');const catalog=(await as(db,"select public.koki_business('catalog','{}'::jsonb) c"))[0].c;await db.query('reset role');
+  const names=catalog.map(x=>x.nom);for(const n of ['TEST Boutique Koki','TEST Riz 1 kg','TEST Sucre 1 kg','TEST Plomberie','TEST Pose de robinet'])assert.ok(names.includes(n),n);
+  for(const n of ['TEST Annexe Ouarak','TEST Quincaillerie en attente'])assert.ok(!names.includes(n),n);
+  assert.equal(catalog.find(x=>x.nom==='TEST Boutique Koki').village,'Coki');assert.equal(catalog.find(x=>x.nom==='TEST Sucre 1 kg').statut,'Épuisé');assert.equal(catalog.find(x=>x.nom==='TEST Riz 1 kg').ancien_prix,600);
   // Crochet SMS local : enregistre le code, n'envoie rien.
   await db.query('set role supabase_auth_admin');await db.query(`select koki_local.send_sms('{"user":{"phone":"221770000000"},"sms":{"otp":"654321"}}')`);await db.query('reset role');
   assert.deepEqual(await as(db,'select phone,code from koki_local.sms_codes'),[{phone:'221770000000',code:'654321'}]);

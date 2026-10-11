@@ -48,8 +48,9 @@ Outils : Studio http://127.0.0.1:54323 · e-mails de test (Mailpit) http://127.0
 | TEST Administrateur `koki-test-admin@example.test` (superadmin) | Écran de connexion → « Activer mon compte / mot de passe oublié » → ouvrir l'e-mail dans Mailpit → choisir un mot de passe → enrôler la double authentification (application TOTP) |
 | TEST Client | SMS `+999000000001`, code `123456` |
 | TEST Chauffeur (Taxi disponible à 15,56 / −16,21) | SMS `+999000000002`, code `123456` |
-| TEST Commerçant (TEST Boutique Koki, 2 produits) | SMS `+999000000003`, code `123456` |
-| TEST Prestataire (TEST Plomberie) | SMS `+999000000004`, code `123456` |
+| TEST Commerçant (TEST Boutique Koki validée, 3 produits dont un épuisé ; TEST Annexe Ouarak à valider) | SMS `+999000000003`, code `123456` |
+| TEST Prestataire (plomberie sur devis et pose de robinet à 3 000 FCFA) | SMS `+999000000004`, code `123456` |
+| TEST Commerçant en attente (fiche soumise, à valider) | SMS `+999000000005`, code `123456` |
 
 Aucun mot de passe n'est enregistré dans le dépôt. Pour tout autre numéro (ex. `77 123 45 67`), le code n'est **pas envoyé** : il apparaît dans Studio, table `koki_local.sms_codes`. Aucun fournisseur SMS n'est configuré, donc aucun SMS réel ne peut partir.
 

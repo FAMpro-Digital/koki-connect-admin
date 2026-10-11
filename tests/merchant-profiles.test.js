@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {PGlite} from '@electric-sql/pglite';import {randomUUID} from 'node:crypto';import {setupBusinessDB,actor,rpc,testActors} from './helpers/business-db.js';
 const input=()=>({request_id:randomUUID(),name:'TEST Commerce',profile:'Commerçant',category:'Alimentation',phone:'+221770000000',address:'TEST Koki marché',location:{latitude:15.5,longitude:-16},hours:'Lundi au samedi 8h–18h',description:'TEST commerce local pour les essais uniquement',photos:[]});
 async function fixture(fn){const pg=new PGlite(),db={query:(q,v)=>v?pg.query(q,v):pg.exec(q).then(x=>x.at(-1))};try{await setupBusinessDB(db);await actor(db,testActors.merchant);await fn(db);}finally{await pg.close();}}
-test('fiche commerçant : attente, relecture, refus, correction, validation et retrait après modification',()=>fixture(async db=>{
+test('fiche commerçant : attente, relecture, refus, correction, validation et revalidation sans retrait',()=>fixture(async db=>{
  const body=input(),saved=await rpc(db,'submit_merchant',body);assert.equal(saved.statut,'En attente');assert.equal(saved.owner_id,testActors.merchant);assert.deepEqual((await rpc(db,'submit_merchant',body)).id,saved.id);assert.equal((await rpc(db,'get',{id:saved.id})).payload.horaires,body.hours);
  await actor(db,null,'aal1','anon');assert.equal((await rpc(db,'catalog')).length,0);
  await actor(db,testActors.admin,'aal1');await assert.rejects(rpc(db,'review_merchant',{request_id:randomUUID(),id:saved.id,revision:saved.revision,decision:'approve'}),/MFA/);
@@ -11,8 +11,9 @@ test('fiche commerçant : attente, relecture, refus, correction, validation et r
  await actor(db,testActors.admin,'aal2');await assert.rejects(rpc(db,'review_merchant',{request_id:randomUUID(),id:saved.id,revision:saved.revision,decision:'approve'}),/périmée/);
  const approved=await rpc(db,'review_merchant',{request_id:randomUUID(),id:saved.id,revision:amended.revision,decision:'approve'});assert.equal(approved.statut,'Actif');
  await actor(db,null,'aal1','anon');const rows=await rpc(db,'catalog');assert.equal(rows.length,1);assert.equal(rows[0].horaires,body.hours);assert.deepEqual(rows[0].localisation,body.location);assert.equal(rows[0].owner_id,undefined);assert.equal(rows[0].merchant_submission,undefined);
- await actor(db,testActors.merchant);const edit=await rpc(db,'submit_merchant',{...input(),id:saved.id,revision:approved.revision,name:'TEST Nouveau nom'});assert.equal(edit.statut,'En attente');
- await actor(db,null,'aal1','anon');assert.equal((await rpc(db,'catalog')).length,0);
+ // Phase 4 : une modification d'une fiche en ligne attend sa validation sans retirer la fiche du catalogue.
+ await actor(db,testActors.merchant);const edit=await rpc(db,'submit_merchant',{...input(),id:saved.id,revision:approved.revision,name:'TEST Nouveau nom'});assert.equal(edit.statut,'Actif');assert.equal(edit.payload.modification.nom,'TEST Nouveau nom');
+ await actor(db,null,'aal1','anon');const still=await rpc(db,'catalog');assert.equal(still.length,1);assert.notEqual(still[0].nom,'TEST Nouveau nom');
 }));
 test('fiches : champs inconnus, propriétaire, médias, GPS et ancien accès privé contrôlés',()=>fixture(async db=>{
  await assert.rejects(rpc(db,'submit_merchant',{...input(),statut:'Actif'}),/Champs inconnus/);

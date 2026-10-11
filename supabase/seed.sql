@@ -38,13 +38,15 @@ insert into auth.users(instance_id,id,aud,role,email,encrypted_password,email_co
  ('00000000-0000-0000-0000-000000000000','22222222-2222-4222-8222-222222222222','authenticated','authenticated',null,null,null,'999000000001',now(),'{"provider":"phone","providers":["phone"]}','{"nom":"TEST Client"}',now(),now(),'','','',''),
  ('00000000-0000-0000-0000-000000000000','44444444-4444-4444-8444-444444444444','authenticated','authenticated',null,null,null,'999000000002',now(),'{"provider":"phone","providers":["phone"]}','{"nom":"TEST Chauffeur"}',now(),now(),'','','',''),
  ('00000000-0000-0000-0000-000000000000','55555555-5555-4555-8555-555555555555','authenticated','authenticated',null,null,null,'999000000003',now(),'{"provider":"phone","providers":["phone"]}','{"nom":"TEST Commerçant"}',now(),now(),'','','',''),
- ('00000000-0000-0000-0000-000000000000','66666666-6666-4666-8666-666666666666','authenticated','authenticated',null,null,null,'999000000004',now(),'{"provider":"phone","providers":["phone"]}','{"nom":"TEST Prestataire"}',now(),now(),'','','','');
+ ('00000000-0000-0000-0000-000000000000','66666666-6666-4666-8666-666666666666','authenticated','authenticated',null,null,null,'999000000004',now(),'{"provider":"phone","providers":["phone"]}','{"nom":"TEST Prestataire"}',now(),now(),'','','',''),
+ ('00000000-0000-0000-0000-000000000000','88888888-8888-4888-8888-888888888888','authenticated','authenticated',null,null,null,'999000000005',now(),'{"provider":"phone","providers":["phone"]}','{"nom":"TEST Commerçant en attente"}',now(),now(),'','','','');
 insert into auth.identities(provider_id,user_id,identity_data,provider,last_sign_in_at,created_at,updated_at) values
  ('11111111-1111-4111-8111-111111111111','11111111-1111-4111-8111-111111111111','{"sub":"11111111-1111-4111-8111-111111111111","email":"koki-test-admin@example.test","email_verified":true}','email',now(),now(),now()),
  ('22222222-2222-4222-8222-222222222222','22222222-2222-4222-8222-222222222222','{"sub":"22222222-2222-4222-8222-222222222222","phone":"999000000001","phone_verified":true}','phone',now(),now(),now()),
  ('44444444-4444-4444-8444-444444444444','44444444-4444-4444-8444-444444444444','{"sub":"44444444-4444-4444-8444-444444444444","phone":"999000000002","phone_verified":true}','phone',now(),now(),now()),
  ('55555555-5555-4555-8555-555555555555','55555555-5555-4555-8555-555555555555','{"sub":"55555555-5555-4555-8555-555555555555","phone":"999000000003","phone_verified":true}','phone',now(),now(),now()),
- ('66666666-6666-4666-8666-666666666666','66666666-6666-4666-8666-666666666666','{"sub":"66666666-6666-4666-8666-666666666666","phone":"999000000004","phone_verified":true}','phone',now(),now(),now());
+ ('66666666-6666-4666-8666-666666666666','66666666-6666-4666-8666-666666666666','{"sub":"66666666-6666-4666-8666-666666666666","phone":"999000000004","phone_verified":true}','phone',now(),now(),now()),
+ ('88888888-8888-4888-8888-888888888888','88888888-8888-4888-8888-888888888888','{"sub":"88888888-8888-4888-8888-888888888888","phone":"999000000005","phone_verified":true}','phone',now(),now(),now());
 insert into public.koki_admin_members(user_id,role) values('11111111-1111-4111-8111-111111111111','superadmin');
 
 -- 4. Commerces, services et transport : créés par les commandes métier sécurisées (mêmes contrôles que l'application).
@@ -60,12 +62,16 @@ declare
  driver constant uuid:='44444444-4444-4444-8444-444444444444';
  merchant constant uuid:='55555555-5555-4555-8555-555555555555';
  provider constant uuid:='66666666-6666-4666-8666-666666666666';
+ pending constant uuid:='88888888-8888-4888-8888-888888888888';
  d jsonb;v jsonb;m jsonb;p jsonb;shop jsonb;rate record;item jsonb;
 begin
  d:=pg_temp.koki_as(driver,'aal1','register_driver','{"name":"TEST Chauffeur","phone":"+999000000002"}');
  v:=pg_temp.koki_as(driver,'aal1','save_vehicle',jsonb_build_object('parent_id',d->>'id','name','TEST Taxi','category','Taxi','registration','TEST-001'));
  m:=pg_temp.koki_as(merchant,'aal1','register_professional','{"name":"TEST Boutique","phone":"+999000000003","profile":"Commerçant"}');
  p:=pg_temp.koki_as(provider,'aal1','register_professional','{"name":"TEST Prestataire","phone":"+999000000004","profile":"Prestataire de services"}');
+ -- Compléments de fiche (WhatsApp, village, horaires) avant la validation par l'administration.
+ perform pg_temp.koki_as(merchant,'aal1','save_profile_details',jsonb_build_object('revision',(select x.revision from public.koki_records x where x.id=(m->>'id')::uuid),'whatsapp','+999000000003','village','Coki','hours','Lundi–samedi 8 h–20 h'));
+ perform pg_temp.koki_as(provider,'aal1','save_profile_details',jsonb_build_object('revision',(select x.revision from public.koki_records x where x.id=(p->>'id')::uuid),'whatsapp','+999000000004','village','Pallene','zone','Koki et villages voisins'));
  foreach item in array array[d,v,m,p] loop
   perform pg_temp.koki_as(admin,'aal2','admin_review',jsonb_build_object('id',item->>'id','decision','approve'));
  end loop;
@@ -73,10 +79,18 @@ begin
   perform pg_temp.koki_as(admin,'aal2','set_rate',jsonb_build_object('category',rate.category,'base_fcfa',rate.base,'per_km_fcfa',rate.km,'active',true));
  end loop;
  perform pg_temp.koki_as(driver,'aal1','driver_position','{"position":{"latitude":15.56,"longitude":-16.21},"available":true}');
- shop:=pg_temp.koki_as(merchant,'aal1','save_shop',jsonb_build_object('parent_id',m->>'id','name','TEST Boutique Koki','address','TEST Koki centre'));
- perform pg_temp.koki_as(merchant,'aal1','save_product',jsonb_build_object('parent_id',shop->>'id','name','TEST Riz 1 kg','price',500,'stock',20));
- perform pg_temp.koki_as(merchant,'aal1','save_product',jsonb_build_object('parent_id',shop->>'id','name','TEST Huile 1 L','price',1200,'stock',10));
- perform pg_temp.koki_as(provider,'aal1','save_service',jsonb_build_object('parent_id',p->>'id','name','TEST Plomberie','category','Plomberie','price',null));
+ -- Commerces & Services : fiche complétée, boutique validée par l'administration, offres publiées.
+ shop:=pg_temp.koki_as(merchant,'aal1','save_shop',jsonb_build_object('name','TEST Boutique Koki','address','TEST Marché central','village','Coki','hours','Lundi–samedi 8 h–20 h','whatsapp','+999000000003','category','Alimentation','description','Boutique fictive pour les tests.'));
+ shop:=pg_temp.koki_as(admin,'aal2','moderate',jsonb_build_object('id',shop->>'id','revision',(shop->>'revision')::int,'decision','approve'));
+ perform pg_temp.koki_as(merchant,'aal1','save_product',jsonb_build_object('parent_id',shop->>'id','name','TEST Riz 1 kg','category','Alimentation','price',500,'old_price',600,'stock',20));
+ perform pg_temp.koki_as(merchant,'aal1','save_product',jsonb_build_object('parent_id',shop->>'id','name','TEST Huile 1 L','category','Alimentation','price',1200,'stock',10));
+ perform pg_temp.koki_as(merchant,'aal1','save_product',jsonb_build_object('parent_id',shop->>'id','name','TEST Sucre 1 kg','category','Alimentation','price',800,'stock',0));
+ -- Deuxième boutique laissée « À valider » : alimente la file de validation de l'administration.
+ perform pg_temp.koki_as(merchant,'aal1','save_shop',jsonb_build_object('name','TEST Annexe Ouarak','village','Ouarak','description','Boutique fictive en attente de validation.'));
+ perform pg_temp.koki_as(provider,'aal1','save_service',jsonb_build_object('name','TEST Plomberie','category','Plomberie','pricing','devis','zone','Koki et environs'));
+ perform pg_temp.koki_as(provider,'aal1','save_service',jsonb_build_object('name','TEST Pose de robinet','category','Plomberie','pricing','fixe','price',3000,'zone','Coki'));
+ -- Fiche commerçant soumise, en attente de validation (parcours « submit_merchant »).
+ perform pg_temp.koki_as(pending,'aal1','submit_merchant',jsonb_build_object('name','TEST Quincaillerie en attente','profile','Commerçant','category','Boutique et quincaillerie','phone','+999000000005','address','TEST Route principale','location',jsonb_build_object('latitude',15.56,'longitude',-16.21),'hours','Tous les jours 9 h–19 h','description','Fiche fictive en attente de validation.','photos','[]'::jsonb));
  perform set_config('request.jwt.claim.sub','',true);
  perform set_config('request.jwt.claims','',true);
 end $$;

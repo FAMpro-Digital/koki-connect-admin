@@ -86,6 +86,7 @@ max_frequency = "5s"
 999000000002 = "123456"
 999000000003 = "123456"
 999000000004 = "123456"
+999000000005 = "123456"
 
 # Tout autre numéro : le code n'est PAS envoyé, il est enregistré dans la base locale
 # (table koki_local.sms_codes, visible dans Studio http://127.0.0.1:54323). Fonction créée par seed.sql.

@@ -12,7 +12,7 @@ export async function setupSupabaseStub(db){
 }
 export async function setupBusinessDB(db){
  await setupSupabaseStub(db);
- for(const name of ['schema.sql','proposals/commerce-transport-foundation.sql','proposals/phase2-transactions.sql','proposals/merchant-profiles.sql'])await db.query(await readFile(new URL('../../supabase/'+name,import.meta.url),'utf8'));
+ for(const name of ['schema.sql','proposals/commerce-transport-foundation.sql','proposals/phase2-transactions.sql','proposals/merchant-profiles.sql','proposals/commerce-modernisation.sql'])await db.query(await readFile(new URL('../../supabase/'+name,import.meta.url),'utf8'));
  for(const id of Object.values(testActors))await db.query('insert into auth.users(id) values($1)',[id]);
  await db.query("insert into koki_admin_members(user_id,role) values($1,'superadmin'),($2,'editor')",[testActors.admin,testActors.editor]);
 }
@@ -31,7 +31,8 @@ export async function fixtureBusiness(db){
  await actor(db,testActors.admin,'aal2');for(const item of [driver,vehicle,merchant,provider])await rpc(db,'admin_review',{request_id:key(),id:item.id,decision:'approve'});
  await rpc(db,'set_rate',{request_id:key(),category:'Taxi',base_fcfa:500,per_km_fcfa:250,active:true});
  await actor(db,testActors.driver);await rpc(db,'driver_position',{request_id:key(),position:point,available:true});
- await actor(db,testActors.merchant);const shop=await rpc(db,'save_shop',{request_id:key(),parent_id:merchant.id,name:'TEST Shop',address:'TEST Koki'});
+ await actor(db,testActors.merchant);const shopDraft=await rpc(db,'save_shop',{request_id:key(),parent_id:merchant.id,name:'TEST Shop',address:'TEST Koki'});
+ await actor(db,testActors.admin,'aal2');const shop=await rpc(db,'moderate',{request_id:key(),id:shopDraft.id,revision:shopDraft.revision,decision:'approve'});await actor(db,testActors.merchant);
  const product=await rpc(db,'save_product',{request_id:key(),parent_id:shop.id,name:'TEST Riz',price:500,stock:2});
  await actor(db,testActors.provider);const service=await rpc(db,'save_service',{request_id:key(),parent_id:provider.id,name:'TEST Plomberie',category:'Plomberie',price:null});
  return {driver,vehicle,merchant,provider,shop,product,service};
