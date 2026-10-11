@@ -3,7 +3,7 @@ import {setupBusinessDB,fixtureBusiness} from './helpers/business-db.js';
 const file=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
 test('administration Commerces & Services : écrans branchés, aucun identifiant à saisir',async()=>{
  const ui=await file('src/commerce-admin.js'),app=await file('src/app.js'),model=await file('src/model.js'),client=await file('src/business-client.js');
- assert.match(app,/\['validations','✅ Validations commerciales'\]/);assert.match(app,/renderCommerceRubric\(main,k,/);assert.match(app,/await commerceDashboard\(main,/);
+ assert.match(await file('src/rubriques-contract.js'),/\['validations','Validations'\]/);assert.match(app,/renderCommerceRubric\(main,k,/);assert.match(app,/await commerceDashboard\(main,/);
  for(const c of ['admin_stats','admin_queue','admin_records'])assert.match(client,new RegExp("'"+c+"'"),'lecture sans clé de requête : '+c);
  for(const c of ['moderate','review_changes','admin_update'])assert.match(ui,new RegExp("run\\(ctx,'"+c+"'"),c);
  assert.doesNotMatch(ui,/Identifiant|owner_id|innerHTML/);

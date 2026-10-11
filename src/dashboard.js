@@ -12,18 +12,18 @@ export function dashboardMetrics(stats,summary,operational={}){
  return [
  {label:'Utilisateurs inscrits',value:stats?.['Utilisateurs inscrits']??null,note:'Comptes Auth, administrateurs inclus',color:7},
  {label:'Utilisateurs actifs',value:stats?.['Utilisateurs actifs']??null,note:'Suivi d’activité non connecté',color:1},
- {label:'Actualités publiées',value:stats?.['Actualités publiées']??null,target:'contents',color:0},
- {label:'Annonces en attente',value:null,note:'File de propositions à développer',target:'contents',color:4},
- {label:'Publicités actives',value:stats?.['Publicités actives']??null,target:'contents',color:3},
+ {label:'Actualités publiées',value:stats?.['Actualités publiées']??null,target:'contenus:Actualités',color:0},
+ {label:'Annonces en attente',value:null,note:'File de propositions à développer',target:'contenus:Annonces',color:4},
+ {label:'Publicités actives',value:stats?.['Publicités actives']??null,target:'contenus:Publicités',color:3},
  {label:'Commerces et prestataires',value:stats?.['Commerces et prestataires']??null,target:'professionnels',color:5},
  {label:'Chauffeurs disponibles',value:operational.drivers??null,target:'chauffeurs',color:6},
  {label:'Commandes',value:stats?.Commandes??null,target:'commandes',color:3},
  {label:'Courses',value:stats?.Courses??null,target:'courses',color:6},
  {label:'Revenus FCFA',value:stats?.['Revenus FCFA']??null,note:'Paiements non connectés',color:1},
- {label:'Sports / ASC',value:count('Sports & ASC'),target:'contents',color:1},
- {label:'Événements à venir',value:stats?summary.upcomingCount:null,target:'contents',color:2},
- {label:'Annonces publiées',value:stats?.['Annonces publiées']??null,target:'contents',color:4},
- {label:'Opportunités',value:count('Opportunités'),target:'contents',color:5}
+ {label:'Sports / ASC',value:count('Sports & ASC'),target:'contenus:Sports & ASC',color:1},
+ {label:'Événements à venir',value:stats?summary.upcomingCount:null,target:'contenus:Événements',color:2},
+ {label:'Annonces publiées',value:stats?.['Annonces publiées']??null,target:'contenus:Annonces',color:4},
+ {label:'Opportunités',value:count('Opportunités'),target:'contenus:Opportunités',color:5}
  ];
 }
 export function csvReport(metrics,measuredAt){
