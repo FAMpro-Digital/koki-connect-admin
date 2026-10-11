@@ -70,5 +70,5 @@ export async function renderNumeros(main,ctx){
    const toggle=v.archive?button('Réactiver (brouillon)',async()=>{await guard();await write('koki_contents',{statut:'brouillon',texte:K.encode({...v,archive:false})},row);await refresh();}):button('Archiver',async()=>{if(!confirm('Archiver ce numéro et le retirer de l’application publique ?'))return;await guard();await write('koki_contents',{statut:'brouillon',texte:K.encode({...v,archive:true})},row);await refresh();});
    toggle.disabled=!editable;card.append(toggle);grid.append(card);}
   if(!found.length)grid.append(n('p',rows.length?'Aucun numéro ne correspond à cette recherche.':'Aucun numéro enregistré. Utilisez « Importer les numéros d’urgence nationaux » pour commencer.'));}
- search.oninput=show;filtre.onchange=show;show();
+ search.oninput=show;filtre.onchange=show;show();if(ctx.open){const cible=rows.find(r=>r.id===ctx.open);if(cible&&editable)await edit(cible);}
 }
