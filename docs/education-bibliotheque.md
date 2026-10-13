@@ -23,7 +23,8 @@ Points signalés « À vérifier » : livre gratuit sans fichier, livre payant s
   - suppression : par son auteur, seulement si plus aucune fiche ne référence le fichier.
 
 ## À faire avant la mise en service
-1. Appliquer la proposition SQL sur Supabase **local**, puis sur la préproduction autorisée. **Elle n'est pas appliquée en production** (aucune base distante modifiée).
+1. Proposition SQL appliquée et vérifiée sur la préproduction TEST (13 octobre 2026). **Production : à appliquer** (projet de production non accessible depuis l'outil de déploiement).
+   Vercel relié au dépôt GitHub le 13 octobre 2026 : chaque mise à jour de `main` publie l'Admin.
 2. Tester sur téléphone : envoi d'un PDF depuis l'Admin, téléchargement et lecture hors ligne dans l'application publique.
 
 ## Vérifications
