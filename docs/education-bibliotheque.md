@@ -23,7 +23,8 @@ Points signalés « À vérifier » : livre gratuit sans fichier, livre payant s
   - suppression : par son auteur, seulement si plus aucune fiche ne référence le fichier.
 
 ## À faire avant la mise en service
-1. Appliquer la proposition SQL sur Supabase **local**, puis sur la préproduction autorisée. **Elle n'est pas appliquée en production** (aucune base distante modifiée).
+1. Proposition SQL appliquée et vérifiée sur la préproduction TEST (13 octobre 2026). Appliquée en **production** le 13 octobre 2026 (migration `education_bibliotheque`, projet qsbmzzbiztfqysstepxm) : bucket privé 50 Mo, 4 règles `livres_*`, contrôle de sécurité Supabase sans nouvelle alerte. Les 4 contenus existants sont inchangés.
+   Vercel relié au dépôt GitHub le 13 octobre 2026 : chaque mise à jour de `main` publie l'Admin.
 2. Tester sur téléphone : envoi d'un PDF depuis l'Admin, téléchargement et lecture hors ligne dans l'application publique.
 
 ## Vérifications

@@ -3,7 +3,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import fs f
 import '../src/rubriques-contract.js';import '../src/numeros-contract.js';import {types,categories,resources} from '../src/model.js';
 const R=globalThis.KokiRubriquesContract,FICHIER=new URL('../src/rubriques-contract.js',import.meta.url);
 // Empreinte du contrat : identique dans les deux dépôts (public : assets/portail/rubriques-contract.js).
-const EMPREINTE='870304e84537c5a9145c8cb5357e5a6656ee0bd887520b2bdd64189ce8b2ab43';
+const EMPREINTE='1ca09b01a93f96256981ecef38bd8d7b44a40e6388ecc1967f7c2861e8479359';
 test('contrat Rubriques : identique dans les deux dépôts',()=>{assert.equal(createHash('sha256').update(fs.readFileSync(FICHIER)).digest('hex'),EMPREINTE);});
 test('les 8 rubriques de l’accueil public, dans le même ordre',()=>{
  assert.deepEqual(R.rubriques.map(r=>r.nom),['Transport','Commerces & Services','Éducation','Emplois & Opportunités','Sports & ASC','Santé','Événements','Services publics']);
@@ -17,7 +17,7 @@ test('chaque type de contenu appartient à une seule rubrique ou publication',()
 test('chaque écran métier et chaque écran dédié est rangé dans une seule rubrique',()=>{
  const ecrans=R.rubriques.flatMap(r=>r.ecrans.map(([k])=>k));assert.equal(new Set(ecrans).size,ecrans.length);
  for(const k of Object.keys(resources))assert.ok(ecrans.includes(k),k+' sans rubrique');
- for(const k of ['validations','education','education-apercu','livres'])assert.ok(ecrans.includes(k));
+ for(const k of ['validations','education','education-apercu','livres','sante'])assert.ok(ecrans.includes(k));
  assert.equal(R.rubriqueDe('numeros').nom,'Numéros utiles');
  for(const k of ecrans)assert.ok(R.rubriqueDe(k),k);
 });
