@@ -30,7 +30,8 @@
     "deploymentEnabled": {
       "develop/phases-2-6": false,
       "develop/education-bibliotheque": false,
-      "develop/production-phases-2-6": false
+      "develop/production-phases-2-6": false,
+      "develop/sante": false
     }
   }
 }
