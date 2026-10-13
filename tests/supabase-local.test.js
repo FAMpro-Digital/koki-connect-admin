@@ -13,7 +13,7 @@ const as=async(db,sql)=>(await db.query(sql)).rows;
 test('migrations locales : générées depuis les sources, dans l’ordre validé, à jour',async()=>{
  const generated=await localMigrations();
  assert.deepEqual(generated.map(m=>m.name),[...generated.map(m=>m.name)].sort());
- assert.deepEqual(migrationSources.filter(m=>m.file).map(m=>m.file),['supabase/preproduction/fresh-project-check.sql','supabase/schema.sql','supabase/proposals/commerce-transport-foundation.sql','supabase/proposals/phase2-transactions.sql','supabase/proposals/merchant-profiles.sql','supabase/proposals/commerce-modernisation.sql']);
+ assert.deepEqual(migrationSources.filter(m=>m.file).map(m=>m.file),['supabase/preproduction/fresh-project-check.sql','supabase/schema.sql','supabase/proposals/commerce-transport-foundation.sql','supabase/proposals/phase2-transactions.sql','supabase/proposals/merchant-profiles.sql','supabase/proposals/commerce-modernisation.sql','supabase/proposals/education-bibliotheque.sql']);
  for(const m of generated){assert.equal(await file('supabase/migrations/'+m.name),m.sql,m.name+' doit être régénéré (node scripts/build-local-migrations.mjs)');assert.doesNotMatch(m.sql,/^\s*(begin|commit);\s*$/m);}
 });
 test('Supabase local : migrations + données fictives, flux public et commandes métier',async()=>{
