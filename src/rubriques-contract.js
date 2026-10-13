@@ -12,7 +12,7 @@ const rubriques=gele([
  gele({cle:'commerce',nom:'Commerces & Services',icone:'🛍️',couleur:'#c76a00',
   ecrans:gele([gele(['validations','Validations']),gele(['professionnels','Fiches professionnelles']),gele(['boutiques','Boutiques']),gele(['produits','Produits']),
    gele(['services','Services']),gele(['commandes','Commandes']),gele(['demandes_services','Demandes de services'])])}),
- gele({cle:'education',nom:'Éducation',icone:'🎓',couleur:'#087dff',ecrans:gele([gele(['education','Établissements scolaires'])])}),
+ gele({cle:'education',nom:'Éducation',icone:'🎓',couleur:'#087dff',ecrans:gele([gele(['education-apercu','Vue d’ensemble']),gele(['education','Établissements scolaires']),gele(['livres','Bibliothèque (livres)'])])}),
  gele({cle:'opportunites',nom:'Emplois & Opportunités',icone:'💼',couleur:'#008397',type:'Opportunités',ecrans:gele([])}),
  gele({cle:'sports',nom:'Sports & ASC',icone:'⚽',couleur:'#008444',type:'Sports & ASC',ecrans:gele([])}),
  gele({cle:'sante',nom:'Santé',icone:'🏥',couleur:'#d8004f',lieux:'Santé',categorie:'Santé',numeros:gele(['Santé']),ecrans:gele([])}),
