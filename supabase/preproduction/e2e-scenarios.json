@@ -1,0 +1,16 @@
+{
+  "environment": "Nouveau Supabase TEST exclusivement",
+  "execution": "Préparé ; non exécuté sur Supabase hébergé",
+  "devices": ["Safari iPhone réel", "Chrome Android", "Safari Mac", "navigateur ordinateur"],
+  "before": ["Confirmer le nom et la référence du nouveau projet TEST", "Vérifier les deux URL Supabase dans les requêtes réseau", "Créer cinq comptes TEST dans Auth, confirmer leurs adresses", "Activer et vérifier le TOTP du seul administrateur TEST", "Charger uniquement les données TEST après validation"],
+  "cases": [
+    {"name":"Client Transport", "steps":["Autoriser puis refuser le GPS", "Choisir départ, destination et catégorie", "Estimer puis réserver", "Recharger et consulter l'historique"], "expected":"Prix serveur ; aucune réservation en double ; géolocalisation partagée"},
+    {"name":"Chauffeur", "steps":["Inscription puis validation Admin TEST", "Ajouter véhicule", "Passer disponible", "Accepter une demande depuis deux onglets", "Terminer la course"], "expected":"Une seule acceptation ; transitions autorisées et propriétaire vérifié"},
+    {"name":"Commerçant", "steps":["Inscription et validation TEST", "Créer boutique et produit stock 2", "Commander simultanément depuis plusieurs clients TEST", "Suivre les statuts"], "expected":"Stock jamais négatif ; total calculé côté serveur ; commandes privées"},
+    {"name":"Prestataire", "steps":["Inscription et validation TEST", "Créer prestation sur devis", "Demander puis accepter un devis", "Recharger le suivi"], "expected":"Seuls le client concerné, le prestataire et les administrateurs autorisés accèdent à la demande"},
+    {"name":"Images", "steps":["Choisir JPEG/PNG/WebP et HEIC compatible sur iPhone", "Compresser puis enregistrer un brouillon TEST", "Actualiser et rouvrir", "Tenter une lecture sans connexion autorisée"], "expected":"Référence conservée ; bucket privé ; URL signée ; absence de fuite"},
+    {"name":"MFA et permissions", "steps":["Tester une session Admin aal1 puis aal2", "Tenter un accès inter-client et une mutation sans rôle", "Contrôler les réponses HTTP et les erreurs navigateur"], "expected":"Opérations sensibles refusées à aal1 ; aucune donnée étrangère ; protections HTTP présentes"},
+    {"name":"Réseau et récupération", "steps":["Interrompre une commande puis recharger", "Réessayer avec son identifiant initial", "Ouvrir le lien de récupération dans la préproduction"], "expected":"Pas de doublon ; message clair ; aucun retour vers le backend ou l'application de production"}
+  ],
+  "after": ["Inventorier uniquement les identifiants TEST créés", "Ne supprimer aucune donnée réelle", "Ne révoquer aucun facteur existant et ne déconnecter aucune session sans accord", "Documenter les résultats avant toute mise en production"]
+}

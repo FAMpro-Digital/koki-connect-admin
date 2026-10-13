@@ -3,4 +3,33 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.supabase-local.example
 work/
+
+# Local credentials, generated evidence and build outputs are not source backups.
+.vercel/
+.env
+.env.*
+!.env.example
+node_modules/
+artifacts/
+coverage/
+test-results/
+playwright-report/
+playwright/.auth/
+.auth/
+storageState*.json
+*.log
+*.pem
+*.key
+*.dump
+*.backup
+.DS_Store
+
+# Supabase local (CLI)
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+
+# Modèle de configuration locale sans secret (doit être versionné)
+!.env.supabase-local.example

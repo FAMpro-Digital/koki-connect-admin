@@ -1,0 +1,113 @@
+# Supabase LOCAL de Koki Connect (Docker sur votre ordinateur). Aucun projet distant.
+# NE JAMAIS lancer « supabase link » ni « supabase db push » depuis ce dépôt.
+# Référence : https://supabase.com/docs/guides/local-development/cli/config
+project_id = "koki-connect-local"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+# Même version majeure que les projets Supabase en ligne (exigée par la garde « projet vide »).
+major_version = 17
+
+[db.migrations]
+enabled = true
+
+[db.seed]
+enabled = true
+# Données fictives « TEST » uniquement, rejouées à chaque « supabase db reset ».
+sql_paths = ["./seed.sql"]
+
+[realtime]
+enabled = false
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+
+# Boîte de réception de test (Mailpit) : aucun e-mail ne sort de l'ordinateur.
+# Consultez les e-mails sur http://127.0.0.1:54324
+[local_smtp]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+# Le compartiment privé koki-media (1 Mo, JPEG/PNG/WebP) est créé par la migration du schéma.
+file_size_limit = "1MiB"
+
+[auth]
+enabled = true
+# Administration (Vite) et site public (serveur local) servis sur la boucle locale uniquement.
+site_url = "http://127.0.0.1:5173"
+additional_redirect_urls = ["http://127.0.0.1:5173", "http://127.0.0.1:5173/", "http://127.0.0.1:8080", "http://127.0.0.1:8080/"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+# Ouvert en LOCAL pour tester l'inscription par SMS des clients et professionnels.
+enable_signup = true
+enable_anonymous_sign_ins = false
+enable_manual_linking = false
+minimum_password_length = 10
+password_requirements = "letters_digits"
+
+[auth.rate_limit]
+sms_sent = 30
+sign_in_sign_ups = 30
+token_verifications = 30
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+# Comme le projet de test : confirmation par e-mail (lien visible dans Mailpit).
+enable_confirmations = true
+secure_password_change = false
+max_frequency = "1s"
+otp_length = 6
+otp_expiry = 3600
+
+# SMS en MODE TEST : aucun fournisseur SMS n'est configuré, aucun SMS réel ne peut partir.
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
+template = "Koki Connect : votre code est {{ .Code }}"
+max_frequency = "5s"
+
+# Comptes fictifs : code fixe 123456 (numéros sans « + », préfixe fictif +999).
+[auth.sms.test_otp]
+999000000001 = "123456"
+999000000002 = "123456"
+999000000003 = "123456"
+999000000004 = "123456"
+999000000005 = "123456"
+
+# Tout autre numéro : le code n'est PAS envoyé, il est enregistré dans la base locale
+# (table koki_local.sms_codes, visible dans Studio http://127.0.0.1:54323). Fonction créée par seed.sql.
+[auth.hook.send_sms]
+enabled = true
+uri = "pg-functions://postgres/koki_local/send_sms"
+
+# Double authentification de l'administration (TOTP, niveau aal2 exigé par koki_private.allowed).
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.mfa.phone]
+enroll_enabled = false
+verify_enabled = false
+
+[edge_runtime]
+enabled = false
+
+[analytics]
+enabled = false

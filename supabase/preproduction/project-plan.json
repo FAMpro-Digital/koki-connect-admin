@@ -1,0 +1,40 @@
+{
+  "name":"Koki Connect TEST — Préproduction",
+  "organization":"kokiconnect221-ux's Org",
+  "organizationId":"ybsokeuyduvfoulizcay",
+  "region":"eu-west-2",
+  "postgres":"17.11",
+  "requiredPlan":"free",
+  "maximumApprovedMonthlyCost":0,
+  "productionProjectRef":"qsbmzzbiztfqysstepxm",
+  "productionOrganization":"FAMpro Évents (organisation distincte, jamais ciblée par ce plan)",
+  "blockedProjectRefs":["qsbmzzbiztfqysstepxm","paegdthtusbwxuarhacb"],
+  "testProjectRef":"euvxtwmyoihnutifshay",
+  "testProjectURL":"https://euvxtwmyoihnutifshay.supabase.co",
+  "status":"created_partially_installed",
+  "verifiedAt":"2026-10-11",
+  "verifiedState":{
+    "readOnly":true,
+    "appliedMigrations":["20261011000211 koki_admin_initial (schema.sql)","20261011000229 commerce_transport_foundation"],
+    "schemaFingerprint":"identique à schema.sql + proposals/commerce-transport-foundation.sql de la branche, sauf le droit anon sur public.koki_statistics() (corrigé par le paquet)",
+    "rows":{"auth.users":0,"public.koki_records":0,"public.koki_contents":0,"public.koki_users":0,"storage.objects":0},
+    "securityAdvisors":0
+  },
+  "installOrder":["schema.sql","proposals/commerce-transport-foundation.sql","proposals/phase2-transactions.sql","proposals/merchant-profiles.sql","proposals/commerce-modernisation.sql","marqueur KOKI TEST"],
+  "continuation":{
+    "bundle":"supabase/preproduction/koki-test-poursuite-phase6.sql",
+    "manifest":"supabase/preproduction/koki-test-poursuite-phase6.manifest.json",
+    "rollback":"supabase/preproduction/retour-arriere-phase6.sql",
+    "fingerprint":"supabase/preproduction/empreinte.sql",
+    "remoteApplied":false,
+    "requiresExplicitAuthorization":true
+  },
+  "auth":{"emailConfirmation":true,"anonymousSignIn":false,"adminMfa":"totp_aal2_required","adminRole":"supabase/preproduction/attribuer-role-admin.sql (identifiant de compte vérifié)","sms":"supabase/preproduction/crochet-sms-test.sql (crochet Send SMS Postgres koki_test.send_sms) : aucun SMS réel, aucun fournisseur payant, seuls +999000000001 à +999000000009 acceptés ; retrait : crochet-sms-test-retrait.sql","redirects":"exact_preview_urls_only"},
+  "storage":{"bucket":"koki-media","public":false,"maximumBytes":1048576,"mimeTypes":["image/jpeg","image/png","image/webp"]},
+  "accounts":["TEST client","TEST chauffeur","TEST commerçant","TEST prestataire","TEST administrateur"],
+  "provisioning":"Supabase Auth uniquement, mots de passe personnels, aucun secret dans les fichiers",
+  "emailDelivery":"aucun envoi requis : compte administrateur créé confirmé depuis le tableau de bord",
+  "fixtures":{"fictional":true,"namesPrefix":"TEST","phonePrefix":"+999","position":{"latitude":15.56,"longitude":-16.21},"rates":{"Moto":{"base_fcfa":200,"per_km_fcfa":100},"Taxi":{"base_fcfa":500,"per_km_fcfa":250},"Voiture":{"base_fcfa":700,"per_km_fcfa":300},"Minicar":{"base_fcfa":1000,"per_km_fcfa":400}}},
+  "productionChanges":false,
+  "deployed":false
+}
