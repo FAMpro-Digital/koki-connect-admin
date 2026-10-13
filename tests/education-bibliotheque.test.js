@@ -7,7 +7,7 @@ const A=testActors.admin,E=testActors.editor;
 const f=n=>A+'/aaaa1111-0000-4000-8000-00000000000'+n+'.pdf';
 
 test('Bibliothèque : seul le fichier d’un livre gratuit publié est lisible par le public',async()=>{
- const db=new PGlite();try{
+ const pg=new PGlite(),db={query:(q,v)=>v?pg.query(q,v):pg.exec(q).then(x=>x.at(-1))};try{
   await setupBusinessDB(db);
   await db.query(await readFile(new URL('../supabase/proposals/education-bibliotheque.sql',import.meta.url),'utf8'));
   const bucket=(await db.query("select file_size_limit,allowed_mime_types from storage.buckets where id='koki-livres'")).rows[0];
@@ -30,7 +30,7 @@ test('Bibliothèque : seul le fichier d’un livre gratuit publié est lisible p
   assert.equal((await db.query("delete from storage.objects where bucket_id='koki-livres' and name=$1 returning 1",[f(1)])).rows.length,0,'fichier encore référencé');
   assert.equal((await db.query("delete from storage.objects where bucket_id='koki-livres' and name=$1 returning 1",[A+'/nouveau.pdf'])).rows.length,1);
   await actor(db,E,'aal2');await db.query("insert into storage.objects(bucket_id,name) values('koki-livres',$1)",[E+'/editeur.pdf']);
- }finally{await db.close();}
+ }finally{await pg.close();}
 });
 
 test('Contrat livre : identique au site public et sans fichier pour un livre payant',async()=>{

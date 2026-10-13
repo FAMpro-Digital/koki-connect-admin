@@ -16,7 +16,7 @@ Points signalés « À vérifier » : livre gratuit sans fichier, livre payant s
 
 ## Contrat et stockage
 - `src/livre-contract.js` : contrat `koki.education.book` v1, **identique** à `assets/portail/livre-contract.js` du site public. Pas de nouvelle table : `koki_contents` (`Informations utiles` / `Éducation`).
-- `supabase/proposals/education-bibliotheque.sql` (+ migration locale générée `20261013000100_education_bibliotheque.sql`) :
+- `supabase/proposals/education-bibliotheque.sql` (+ migration locale générée `20261011000470_education_bibliotheque.sql`) :
   - bucket privé **`koki-livres`**, 50 Mo, types PDF/EPUB/MP3/M4A ;
   - envoi : éditeurs avec MFA, dans leur propre dossier ;
   - lecture publique : **uniquement** le fichier d'un livre gratuit publié, visible à la date courante et non archivé (`koki_private.livre_gratuit_publie`) ; un livre payant, programmé, en brouillon ou archivé n'est jamais lisible ;
