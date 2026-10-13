@@ -10,7 +10,7 @@ const rubriques=gele([
  gele({cle:'transport',nom:'Transport',icone:'🚕',couleur:'#245d88',
   ecrans:gele([gele(['courses','Courses']),gele(['chauffeurs','Chauffeurs']),gele(['vehicules','Véhicules']),gele(['tarifs','Tarifs Transport'])])}),
  gele({cle:'commerce',nom:'Commerces & Services',icone:'🛍️',couleur:'#c76a00',
-  ecrans:gele([gele(['validations','Validations']),gele(['professionnels','Fiches professionnelles']),gele(['boutiques','Boutiques']),gele(['produits','Produits']),
+  ecrans:gele([gele(['boutique-en-ligne','Boutique en ligne']),gele(['validations','Validations']),gele(['professionnels','Fiches professionnelles']),gele(['boutiques','Boutiques']),gele(['produits','Produits']),
    gele(['services','Services']),gele(['commandes','Commandes']),gele(['demandes_services','Demandes de services'])])}),
  gele({cle:'education',nom:'Éducation',icone:'🎓',couleur:'#087dff',ecrans:gele([gele(['education-apercu','Vue d’ensemble']),gele(['education','Établissements scolaires']),gele(['livres','Bibliothèque (livres)'])])}),
  gele({cle:'opportunites',nom:'Emplois & Opportunités',icone:'💼',couleur:'#008397',type:'Opportunités',ecrans:gele([])}),
