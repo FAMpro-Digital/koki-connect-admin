@@ -33,7 +33,8 @@
       "develop/production-phases-2-6": false,
       "develop/sante": false,
       "develop/commerce": false,
-      "develop/parcours-complet": false
+      "develop/parcours-complet": false,
+      "develop/parcours-pro-securite": false
     }
   }
 }
