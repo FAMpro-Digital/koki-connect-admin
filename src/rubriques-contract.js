@@ -8,7 +8,7 @@ const gele=x=>Object.freeze(x);
 // Les 8 rubriques de l'accueil public, dans l'ordre d'affichage.
 const rubriques=gele([
  gele({cle:'transport',nom:'Transport',icone:'🚕',couleur:'#245d88',
-  ecrans:gele([gele(['courses','Courses']),gele(['chauffeurs','Chauffeurs']),gele(['vehicules','Véhicules']),gele(['tarifs','Tarifs Transport'])])}),
+  ecrans:gele([gele(['courses','Courses']),gele(['chauffeurs','Chauffeurs']),gele(['vehicules','Véhicules']),gele(['tarifs','Tarifs Transport']),gele(['signalements','Signalements'])])}),
  gele({cle:'commerce',nom:'Commerces & Services',icone:'🛍️',couleur:'#c76a00',
   ecrans:gele([gele(['boutique-en-ligne','Boutique en ligne']),gele(['validations','Validations']),gele(['professionnels','Fiches professionnelles']),gele(['boutiques','Boutiques']),gele(['produits','Produits']),
    gele(['services','Services']),gele(['commandes','Commandes']),gele(['demandes_services','Demandes de services'])])}),
