@@ -52,3 +52,5 @@ test('clearing session proof prevents revocation after sign-out',async()=>{
   const f=fixture();await f.manager.enroll('Nouveau');await f.manager.verify('new','123456',true);f.manager.clearProof();
   await assert.rejects(f.manager.revoke('old','old'),/autre facteur/);
 });
+
+test('invalid TOTP gives actionable feedback without leaking server details',async()=>{const auth={mfa:{listFactors:async()=>({data:{all:[{id:'test',factor_type:'totp',status:'unverified'}]}}),challengeAndVerify:async()=>({error:{code:'mfa_verification_failed',message:'private server details'}})}};const manager=createMfaManager(auth,async()=>{});await assert.rejects(manager.verify('test','000000',true),e=>e.message.includes('Code incorrect ou expiré')&&!e.message.includes('private'));});
