@@ -19,13 +19,15 @@ const rubriques=gele([
  gele({cle:'evenements',nom:'Événements',icone:'📅',couleur:'#ef153b',type:'Événements',ecrans:gele([])}),
  gele({cle:'services_publics',nom:'Services publics',icone:'🏛️',couleur:'#820ed8',lieux:'Services publics',numeros:gele(['Administration','Eau et électricité','Sécurité']),ecrans:gele([])})
 ]);
-// Les publications de l'accueil public (blocs « Actualités de Koki », « Annonces »…), puis les numéros utiles.
+// Les publications de l'accueil public (blocs « Actualités de Koki », « Annonces »…), puis les numéros utiles et les lieux de la carte.
 const publications=gele([
  gele({cle:'actualites',nom:'Actualités',icone:'📰',type:'Actualités'}),
  gele({cle:'annonces',nom:'Annonces',icone:'📢',type:'Annonces'}),
  gele({cle:'publicites',nom:'Publicités',icone:'📣',type:'Publicités'}),
  gele({cle:'informations',nom:'Informations utiles',icone:'ℹ️',type:'Informations utiles'}),
- gele({cle:'numeros',nom:'Numéros utiles',icone:'📞',ecran:'numeros'})
+ gele({cle:'numeros',nom:'Numéros utiles',icone:'📞',ecran:'numeros'}),
+ // Lieux de la carte publique (Carte, « Autour de moi », Transport, Services publics) : ajouts et corrections.
+ gele({cle:'lieux',nom:'Lieux de la carte',icone:'📍',ecran:'lieux'})
 ]);
 // Sous-rubriques « Opportunités jeunes » de l'application publique et catégories de contenu correspondantes.
 const sousRubriques=gele({'Opportunités':gele([

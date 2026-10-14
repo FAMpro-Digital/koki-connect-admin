@@ -69,3 +69,4 @@
 
 /* Transport · Signalements : les signalements « Sécurité » ressortent. */
 .signalement-securite{border:2px solid #F28C28;background:#FFF8F0}
+.signalement-traitement{display:grid;grid-template-columns:1fr;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid #e3e8e5}.signalement-traitement textarea,.signalement-traitement select{width:100%}.signalement-traitement small{color:#5b6b63}@media(min-width:720px){.signalement-traitement{grid-template-columns:auto 1fr;align-items:center}.signalement-traitement textarea{grid-column:2}.signalement-traitement button,.signalement-traitement small{grid-column:2;justify-self:start}}

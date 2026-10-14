@@ -1,6 +1,10 @@
 // Transport · Signalements : problèmes signalés par les clients ou les chauffeurs pendant ou après une course
-// (bouton « Sécurité » de l'application). Lecture seule ; données du serveur (commande admin_ride_reports,
-// droit Transport et double authentification exigés par le serveur).
+// (bouton « Sécurité » de l'application). Données du serveur (commandes admin_ride_reports et admin_ride_report_status,
+// droit Transport et double authentification exigés par le serveur) : statut Nouveau / En cours / Traité, avec une note
+// (obligatoire pour « Traité »), inscrits au journal des opérations.
+export const STATUTS=['Nouveau','En cours','Traité'];
+// Contrôle avant envoi (le serveur refait les mêmes contrôles).
+export function verifierTraitement(statut,note){const t=String(note||'').trim();if(!STATUTS.includes(statut))return 'Statut invalide.';if(t&&(t.length<3||t.length>500))return 'La note doit contenir de 3 à 500 caractères.';if(statut==='Traité'&&!t)return 'Indiquez ce qui a été fait avant de marquer « Traité ».';return '';}
 export const MOTIFS=['Sécurité','Comportement','Itinéraire','Prix','Objet perdu','Autre'];
 export function bilanSignalements(rows,maintenant=Date.now()){
  const liste=Array.isArray(rows)?rows:[];const parMotif=Object.fromEntries(MOTIFS.map(m=>[m,0]));
@@ -31,8 +35,23 @@ export async function renderSignalements(main,{n,button,api,guard,can,account}){
    card.append(n('h3',r.motif+' · signalé par le '+(r.role==='chauffeur'?'chauffeur':'client')),n('p',date(r.created_at)+' · statut : '+r.statut));
    if(r.details)card.append(n('p','« '+r.details+' »'));
    card.append(n('p','Course '+String(r.ride_id).slice(0,8)+' · '+(r.course_statut||'statut inconnu')+(r.chauffeur?' · chauffeur : '+r.chauffeur:'')));
+   if(r.note_admin)card.append(n('p','Note de l’administration'+(r.traite_le?' ('+date(r.traite_le)+')':'')+' : '+r.note_admin));
+   card.append(traitement(r));
    zone.append(card);
   }
+ }
+ // Traitement : statut et note, envoyés au serveur (droit Transport + MFA), puis la liste est rechargée.
+ function traitement(r){
+  const f=n('form');f.className='signalement-traitement';const id='sig-'+r.id;
+  const ls=n('label','Statut');const st=n('select');st.id=id+'-statut';ls.htmlFor=st.id;for(const x of STATUTS){const o=n('option',x);o.value=x;st.append(o);}st.value=STATUTS.includes(r.statut)?r.statut:'Nouveau';
+  const ln=n('label','Note (ce qui a été fait)');const note=n('textarea');note.id=id+'-note';ln.htmlFor=note.id;note.maxLength=500;note.rows=2;note.placeholder=r.note_admin?'Laisser vide pour garder la note actuelle':'Ex. Client rappelé, chauffeur averti';
+  const ok=n('button','Enregistrer');ok.type='submit';ok.className='com-btn';const msg=n('small');msg.setAttribute('role','status');
+  f.append(ls,st,ln,note,ok,msg);
+  f.onsubmit=async e=>{e.preventDefault();const erreur=verifierTraitement(st.value,note.value);if(erreur){msg.textContent=erreur;return;}
+   ok.disabled=true;msg.textContent='Enregistrement…';
+   try{await guard();const t=note.value.trim();await api.run('admin_ride_report_status',{id:r.id,statut:st.value,...(t?{note:t}:{})},'signalement:'+r.id);await charger();}
+   catch(err){msg.textContent=err.message;ok.disabled=false;}};
+  return f;
  }
  async function charger(){status.textContent='Chargement…';try{await guard();rows=await api.run('admin_ride_reports',{});status.textContent='Données du serveur au '+date(Date.now())+'.';}catch(e){rows=[];status.textContent=e.message;}afficher();}
  filtre.onchange=afficher;main.append(button('Actualiser',charger,'com-btn'));await charger();

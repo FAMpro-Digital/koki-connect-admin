@@ -38,7 +38,8 @@
       "securite/refus-motive-complet": false,
       "develop/transport-securite-suivi": false,
       "develop/signalements-transport": false,
-      "develop/icone-app": false
+      "develop/icone-app": false,
+      "develop/admin-client-alignement": false
     }
   }
 }
