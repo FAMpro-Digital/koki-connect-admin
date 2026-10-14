@@ -70,3 +70,11 @@
 /* Transport · Signalements : les signalements « Sécurité » ressortent. */
 .signalement-securite{border:2px solid #F28C28;background:#FFF8F0}
 .signalement-traitement{display:grid;grid-template-columns:1fr;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid #e3e8e5}.signalement-traitement textarea,.signalement-traitement select{width:100%}.signalement-traitement small{color:#5b6b63}@media(min-width:720px){.signalement-traitement{grid-template-columns:auto 1fr;align-items:center}.signalement-traitement textarea{grid-column:2}.signalement-traitement button,.signalement-traitement small{grid-column:2;justify-self:start}}
+/* Sports & ASC : matchs, score rapide, équipes */
+.sport-match-tete{display:flex;align-items:center;gap:10px}.sport-match-tete h2{margin:0;flex:1;min-width:0}
+.sport-pastille{flex:none;width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2);text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.sport-direct{border:2px solid #F28C28;background:#FFF8F0}
+.sport-score-rapide{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0;padding:10px;border-radius:12px;background:#f3f7f4}
+.sport-score-rapide button{min-width:44px;min-height:40px}.sport-score{min-width:70px;text-align:center;font-size:22px;font-variant-numeric:tabular-nums}
+.sport-score-rapide select{min-height:40px}
+.sport-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.sport-table th{background:#0b5a3c;color:#fff;padding:8px 6px;font-size:13px}.sport-table td{padding:7px 6px;border-top:1px solid #e3ebe6;text-align:center}.sport-table td:nth-child(2){text-align:left;font-weight:600}.sport-table tr:nth-child(2) td{background:#fff4e8}
