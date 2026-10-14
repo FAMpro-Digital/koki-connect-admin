@@ -32,7 +32,8 @@
       "develop/education-bibliotheque": false,
       "develop/production-phases-2-6": false,
       "develop/sante": false,
-      "develop/commerce": false
+      "develop/commerce": false,
+      "develop/parcours-complet": false
     }
   }
 }
