@@ -14,7 +14,7 @@ const rubriques=gele([
    gele(['services','Services']),gele(['commandes','Commandes']),gele(['demandes_services','Demandes de services'])])}),
  gele({cle:'education',nom:'Éducation',icone:'🎓',couleur:'#087dff',ecrans:gele([gele(['education-apercu','Vue d’ensemble']),gele(['education','Établissements scolaires']),gele(['livres','Bibliothèque (livres)'])])}),
  gele({cle:'opportunites',nom:'Emplois & Opportunités',icone:'💼',couleur:'#008397',type:'Opportunités',ecrans:gele([])}),
- gele({cle:'sports',nom:'Sports & ASC',icone:'⚽',couleur:'#008444',type:'Sports & ASC',ecrans:gele([])}),
+ gele({cle:'sports',nom:'Sports & ASC',icone:'⚽',couleur:'#008444',type:'Sports & ASC',ecrans:gele([gele(['sport-matchs','Matchs et résultats']),gele(['sport-equipes','Équipes / ASC'])])}),
  gele({cle:'sante',nom:'Santé',icone:'🏥',couleur:'#d8004f',lieux:'Santé',categorie:'Santé',numeros:gele(['Santé']),ecrans:gele([gele(['sante','Structures de santé'])])}),
  gele({cle:'evenements',nom:'Événements',icone:'📅',couleur:'#ef153b',type:'Événements',ecrans:gele([])}),
  gele({cle:'services_publics',nom:'Services publics',icone:'🏛️',couleur:'#820ed8',lieux:'Services publics',numeros:gele(['Administration','Eau et électricité','Sécurité']),ecrans:gele([])})
