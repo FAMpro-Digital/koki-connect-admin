@@ -19,6 +19,6 @@ test('écrans branchés dans le menu Sports, redirection de l’éditeur, sans i
  const app=fs.readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),ecran=fs.readFileSync(new URL('../src/sport-admin.js',import.meta.url),'utf8');
  assert.match(app,/if\(k==='sport-matchs'\|\|k==='sport-equipes'\)\{await \(k==='sport-matchs'\?renderMatchs:renderEquipes\)\(main,/);
  assert.match(app,/KokiSportContract\?\.decodeMatch\(row\)\)\{await navigate\('sport-matchs','',row\.id\)/);
- assert.equal(globalThis.KokiRubriquesContract?.rubriqueDe?.('sport-matchs')?.nom??'Sports & ASC','Sports & ASC');
+ assert.equal(globalThis.KokiRubriquesContract?.rubriqueDe?.('sport-matchs')?.nom??'Sport','Sport');
  assert.match(ecran,/can\(account\?\.role,'content'\)/);assert.doesNotMatch(ecran,/innerHTML/);
 });

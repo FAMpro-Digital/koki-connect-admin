@@ -20,7 +20,7 @@ export function dashboardMetrics(stats,summary,operational={}){
  {label:'Commandes',value:stats?.Commandes??null,target:'commandes',color:3},
  {label:'Courses',value:stats?.Courses??null,target:'courses',color:6},
  {label:'Revenus FCFA',value:stats?.['Revenus FCFA']??null,note:'Paiements non connectés',color:1},
- {label:'Sports / ASC',value:count('Sports & ASC'),target:'contenus:Sports & ASC',color:1},
+ {label:'Sport',value:count('Sports & ASC'),target:'contenus:Sports & ASC',color:1},
  {label:'Événements à venir',value:stats?summary.upcomingCount:null,target:'contenus:Événements',color:2},
  {label:'Annonces publiées',value:stats?.['Annonces publiées']??null,target:'contenus:Annonces',color:4},
  {label:'Opportunités',value:count('Opportunités'),target:'contenus:Opportunités',color:5}
