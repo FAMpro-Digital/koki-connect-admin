@@ -16,3 +16,12 @@ test('écran branché : menu Transport, lecture serveur sans clé de reprise, dr
  assert.match(ecran,/can\(account\?\.role,'transport'\)/);assert.match(ecran,/api\.run\('admin_ride_reports',\{\}\)/);assert.doesNotMatch(ecran,/innerHTML/);
  assert.equal(globalThis.KokiRubriquesContract?.rubriqueDe?.('signalements')?.nom??'Transport','Transport');
 });
+test('traitement : statuts, note obligatoire pour « Traité », envoi au serveur avec clé par signalement',async()=>{
+ const {verifierTraitement,STATUTS}=await import('../src/signalements-admin.js');
+ assert.deepEqual(STATUTS,['Nouveau','En cours','Traité']);
+ assert.equal(verifierTraitement('En cours',''),'');assert.equal(verifierTraitement('Traité','  Chauffeur averti '),'');
+ assert.match(verifierTraitement('Traité',' '),/ce qui a été fait/);assert.match(verifierTraitement('En cours','ok'),/3 à 500/);assert.match(verifierTraitement('Clos','note'),/invalide/);
+ const ecran=fs.readFileSync(new URL('../src/signalements-admin.js',import.meta.url),'utf8'),cl=fs.readFileSync(new URL('../src/business-client.js',import.meta.url),'utf8');
+ assert.match(ecran,/api\.run\('admin_ride_report_status',\{id:r\.id,statut:st\.value,\.\.\.\(t\?\{note:t\}:\{\}\)\},'signalement:'\+r\.id\)/);
+ assert.doesNotMatch(cl,/'admin_ride_report_status'/,'commande d’écriture : clé de reprise envoyée');
+});
