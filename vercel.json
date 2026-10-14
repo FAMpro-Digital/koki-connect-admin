@@ -37,7 +37,8 @@
       "develop/parcours-pro-securite": false,
       "securite/refus-motive-complet": false,
       "develop/transport-securite-suivi": false,
-      "develop/signalements-transport": false
+      "develop/signalements-transport": false,
+      "develop/icone-app": false
     }
   }
 }
