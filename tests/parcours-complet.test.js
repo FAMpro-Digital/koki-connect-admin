@@ -66,6 +66,9 @@ test('parcours complet : boutique en ligne, service, chauffeur',async()=>{
   const course=await rpc(db,'reserve_ride',{request_id:key(),quote_id:devis.quote_id,vehicle_id:vehicule.id});assert.equal(course.payload.tarif,devis.fare_fcfa);
   await actor(db,A.driver);const acceptee=await suivre(db,course,['Acceptée']);
   await actor(db,A.client);const contacts=await rpc(db,'ride_contacts',{id:course.id});assert.match(contacts.phone||contacts.telephone,/^\+221/);
-  await actor(db,A.driver);const terminee=await suivre(db,acceptee,['Chauffeur en route','Course en cours','Terminée']);assert.equal(terminee.statut,'Terminée');
+  await actor(db,A.driver);const arrive=await suivre(db,acceptee,['Chauffeur en route']);
+  // Départ : le client donne son code, le chauffeur le saisit (sans code, la course ne démarre pas).
+  await actor(db,A.client);const {code}=await rpc(db,'ride_code',{id:course.id});
+  await actor(db,A.driver);const partie=await rpc(db,'start_ride',{request_id:key(),id:course.id,revision:arrive.revision,code});const terminee=await suivre(db,partie,['Terminée']);assert.equal(terminee.statut,'Terminée');
  }finally{await db.close?.();}
 });

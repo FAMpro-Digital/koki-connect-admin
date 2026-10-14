@@ -35,7 +35,8 @@
       "develop/commerce": false,
       "develop/parcours-complet": false,
       "develop/parcours-pro-securite": false,
-      "securite/refus-motive-complet": false
+      "securite/refus-motive-complet": false,
+      "develop/transport-securite-suivi": false
     }
   }
 }
