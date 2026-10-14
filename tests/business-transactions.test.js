@@ -7,7 +7,9 @@ test('phase 2 : inscription, autorisations, devis, stock, idempotence, courses e
  await assert.rejects(rpc(db,'reserve_ride',{...rideInput,request_id:key(),fare:1}),/Champs inconnus/);
  await assert.rejects(rpc(db,'transition',{request_id:key(),id:ride.id,next:'Acceptée',revision:ride.revision}),/Chauffeur assigné/);
  await actor(db,testActors.other);await assert.rejects(rpc(db,'get',{id:ride.id}),/Accès refusé/);assert.deepEqual(await rpc(db,'history',{kind:'courses'}),[]);
- await actor(db,testActors.driver);let current=ride;for(const next of ['Acceptée','Chauffeur en route','Course en cours','Terminée'])current=await rpc(db,'transition',{request_id:key(),id:ride.id,next,revision:current.revision});assert.equal(current.statut,'Terminée');
+ await actor(db,testActors.driver);let current=ride;for(const next of ['Acceptée','Chauffeur en route'])current=await rpc(db,'transition',{request_id:key(),id:ride.id,next,revision:current.revision});
+ await actor(db,testActors.client);const {code}=await rpc(db,'ride_code',{id:ride.id});await actor(db,testActors.driver);current=await rpc(db,'start_ride',{request_id:key(),id:ride.id,revision:current.revision,code});
+ current=await rpc(db,'transition',{request_id:key(),id:ride.id,next:'Terminée',revision:current.revision});assert.equal(current.statut,'Terminée');
  await actor(db,testActors.client);const orderInput={request_id:key(),shop_id:f.shop.id,items:[{product_id:f.product.id,quantity:2}],mode:'retrait'};const order=await rpc(db,'create_order',orderInput);assert.equal(order.payload.total,1000);assert.equal((await rpc(db,'create_order',orderInput)).id,order.id);
  await assert.rejects(rpc(db,'create_order',{...orderInput,request_id:key(),items:[{product_id:f.product.id,quantity:1}]}),/stock insuffisant/);
  const cancelInput={request_id:key(),id:order.id,next:'Annulée',revision:order.revision};await rpc(db,'transition',cancelInput);await rpc(db,'transition',cancelInput);
