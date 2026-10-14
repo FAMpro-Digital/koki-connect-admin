@@ -12,7 +12,7 @@ export async function setupSupabaseStub(db){
 }
 export async function setupBusinessDB(db){
  await setupSupabaseStub(db);
- for(const name of ['schema.sql','proposals/commerce-transport-foundation.sql','proposals/phase2-transactions.sql','proposals/merchant-profiles.sql','proposals/commerce-modernisation.sql','proposals/refus-motive.sql','proposals/refus-motive-complet.sql'])await db.query(await readFile(new URL('../../supabase/'+name,import.meta.url),'utf8'));
+ for(const name of ['schema.sql','proposals/commerce-transport-foundation.sql','proposals/phase2-transactions.sql','proposals/merchant-profiles.sql','proposals/commerce-modernisation.sql','proposals/refus-motive.sql','proposals/refus-motive-complet.sql','proposals/transport-securite-suivi.sql'])await db.query(await readFile(new URL('../../supabase/'+name,import.meta.url),'utf8'));
  for(const id of Object.values(testActors))await db.query('insert into auth.users(id) values($1)',[id]);
  await db.query("insert into koki_admin_members(user_id,role) values($1,'superadmin'),($2,'editor')",[testActors.admin,testActors.editor]);
 }
