@@ -168,7 +168,7 @@ test('contrat partagé = règles du serveur : chaque transition autorisée ou re
   await setupBusinessDB(db);const f=await fixtureBusiness(db);
   const target={professionnels:f.provider.id,boutiques:f.shop.id,produits:f.product.id,services:f.service.id};
   for(const kind of Object.keys(C.decisions))for(const statut of C.statuts[kind])for(const decision of ['approve','reject','suspend','archive']){
-   await db.query('reset role');await db.query("update koki_records set statut='Actif' where id in ($1,$2,$3) and id<>$4",[f.merchant.id,f.shop.id,f.provider.id,target[kind]]);await db.query("update koki_records set statut=$1 where id=$2",[statut,target[kind]]);
+   await db.query('reset role');await db.query("update koki_records set statut='Actif' where id in ($1,$2,$3) and id<>$4",[f.merchant.id,f.shop.id,f.provider.id,target[kind]]);await db.query("update koki_records set statut=$1,payload=payload||jsonb_build_object('moderation',jsonb_build_object('decision','reject','note','TEST préparation du statut','at',clock_timestamp())) where id=$2",[statut,target[kind]]);
    const revision=await revisionOf(db,target[kind]);await actor(db,testActors.admin,'aal2');
    const expected=C.transition(kind,statut,decision);
    const result=await db.query('select public.koki_business($1,$2::jsonb) r',['moderate',JSON.stringify({request_id:key(),id:target[kind],revision,decision,...(decision==='reject'?{note:'TEST motif du refus'}:{})})]).then(x=>x.rows[0].r.statut,e=>e.message);

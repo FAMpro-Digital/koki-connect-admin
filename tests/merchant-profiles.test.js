@@ -6,7 +6,9 @@ test('fiche commerçant : attente, relecture, refus, correction, validation et r
  await actor(db,null,'aal1','anon');assert.equal((await rpc(db,'catalog')).length,0);
  await actor(db,testActors.admin,'aal1');await assert.rejects(rpc(db,'review_merchant',{request_id:randomUUID(),id:saved.id,revision:saved.revision,decision:'approve'}),/MFA/);
  await actor(db,testActors.editor,'aal2');await assert.rejects(rpc(db,'review_merchant',{request_id:randomUUID(),id:saved.id,revision:saved.revision,decision:'approve'}),/MFA/);
- await actor(db,testActors.admin,'aal2');const denied=await rpc(db,'review_merchant',{request_id:randomUUID(),id:saved.id,revision:saved.revision,decision:'reject'});assert.equal(denied.statut,'Refusé');
+ await actor(db,testActors.admin,'aal2');for(const note of [undefined,'','  ','ok'])await assert.rejects(rpc(db,'review_merchant',{request_id:randomUUID(),id:saved.id,revision:saved.revision,decision:'reject',...(note===undefined?{}:{note})}),/Motif de refus obligatoire/);
+ await assert.rejects(rpc(db,'admin_review',{request_id:randomUUID(),id:saved.id,decision:'reject'}),/Motif de refus obligatoire|Champs inconnus/);
+ const denied=await rpc(db,'review_merchant',{request_id:randomUUID(),id:saved.id,revision:saved.revision,decision:'reject',note:'Photos floues'});assert.equal(denied.statut,'Refusé');assert.equal(denied.payload.moderation.note,'Photos floues');assert.equal(denied.payload.moderation.decision,'reject');
  await actor(db,testActors.merchant);const amended=await rpc(db,'submit_merchant',{...input(),id:saved.id,revision:denied.revision});assert.equal(amended.statut,'En attente');
  await actor(db,testActors.admin,'aal2');await assert.rejects(rpc(db,'review_merchant',{request_id:randomUUID(),id:saved.id,revision:saved.revision,decision:'approve'}),/périmée/);
  const approved=await rpc(db,'review_merchant',{request_id:randomUUID(),id:saved.id,revision:amended.revision,decision:'approve'});assert.equal(approved.statut,'Actif');
