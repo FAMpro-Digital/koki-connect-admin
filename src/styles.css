@@ -60,3 +60,9 @@
 .position-gps{grid-column:1/-1;display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid #bbcdbf;border-radius:12px;background:#f6faf7}.position-gps .position-etat{margin:0;font-weight:600}.position-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.position-actions a{color:#087a3d;font-weight:600;padding:10px 4px}.position-gps small{color:#5c6c60}@media(max-width:760px){.position-gps{grid-column:auto}.position-actions button{width:100%}}
 
 .horaires-ligne{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:8px 0}.horaires-ligne label{display:inline-flex;align-items:center;gap:4px;min-height:44px}.horaires-ligne input[type=time]{min-height:44px}fieldset:disabled{opacity:.55}
+
+.forms[hidden]{display:none}
+.mfa-configuration{margin:18px 0;padding:18px;background:white;border:1px solid #e1e9e3;border-radius:18px}
+.mfa-configuration summary{cursor:pointer;padding:12px 0}
+.mfa-configuration label{display:flex;flex-direction:column;gap:8px}
+.mfa-configuration input{width:100%;min-width:0;padding:12px;font:inherit}

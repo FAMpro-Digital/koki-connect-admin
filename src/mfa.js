@@ -4,7 +4,7 @@ export function factorMetadata(data){
 }
 export function createMfaManager(auth,authorize,now=Date.now){
   let proof=null,busy=false;
-  const unwrap=r=>{if(r.error)throw Error('Opération MFA refusée. Réessayez ou reconnectez-vous.');return r.data;};
+  const unwrap=r=>{if(r.error){if(r.error.code==='mfa_verification_failed'||/invalid totp code/i.test(r.error.message||''))throw Error('Code incorrect ou expiré. Attendez le prochain code de votre application d’authentification et réessayez.');throw Error('Vérification indisponible. Réessayez ; si le problème persiste, reconnectez-vous.');}return r.data;};
   const list=async()=>factorMetadata(unwrap(await auth.mfa.listFactors()));
   async function exclusive(fn){if(busy)throw Error('Une opération MFA est déjà en cours.');busy=true;try{return await fn();}finally{busy=false;}}
   async function aal2(){await authorize();const level=unwrap(await auth.mfa.getAuthenticatorAssuranceLevel());if(level.currentLevel!=='aal2')throw Error('Double authentification requise.');}
