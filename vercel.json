@@ -34,7 +34,8 @@
       "develop/sante": false,
       "develop/commerce": false,
       "develop/parcours-complet": false,
-      "develop/parcours-pro-securite": false
+      "develop/parcours-pro-securite": false,
+      "securite/refus-motive-complet": false
     }
   }
 }

@@ -4,6 +4,7 @@
 |---|---|---|
 | 13/10/2026 | `education_bibliotheque` (bucket privé `koki-livres`, 4 règles) | Appliquée et vérifiée |
 | 14/10/2026 | `refus-motive.sql` (refus motivé obligatoire côté serveur) — lancé par le propriétaire dans l'éditeur SQL | Appliqué et vérifié (corps identique à la version testée, déclencheur actif, fonction non exposée) |
+| — | `refus-motive-complet.sql` (refus motivé : ancienne décision commerçant, inscriptions chauffeurs, refus de fait par suspension) — garde intégrée : s'arrête si `merchant_business` a changé | **En attente de l'autorisation du propriétaire** (répété sur une base identique à la production) |
 | 13/10/2026 | `koki-production-phases-2-6.sql` (fondation, phase 2, espace commerçant, modernisation Commerces) — lancé par le propriétaire dans l'éditeur SQL | Appliqué et vérifié |
 
 Vérifications après les phases 2 à 6 :
