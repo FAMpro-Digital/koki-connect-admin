@@ -171,7 +171,7 @@ test('contrat partagé = règles du serveur : chaque transition autorisée ou re
    await db.query('reset role');await db.query("update koki_records set statut='Actif' where id in ($1,$2,$3) and id<>$4",[f.merchant.id,f.shop.id,f.provider.id,target[kind]]);await db.query("update koki_records set statut=$1 where id=$2",[statut,target[kind]]);
    const revision=await revisionOf(db,target[kind]);await actor(db,testActors.admin,'aal2');
    const expected=C.transition(kind,statut,decision);
-   const result=await db.query('select public.koki_business($1,$2::jsonb) r',['moderate',JSON.stringify({request_id:key(),id:target[kind],revision,decision})]).then(x=>x.rows[0].r.statut,e=>e.message);
+   const result=await db.query('select public.koki_business($1,$2::jsonb) r',['moderate',JSON.stringify({request_id:key(),id:target[kind],revision,decision,...(decision==='reject'?{note:'TEST motif du refus'}:{})})]).then(x=>x.rows[0].r.statut,e=>e.message);
    assert.equal(expected?result:/incompatible/.test(result)?null:result,expected,`${kind} ${statut} ${decision}`);
   }
  }finally{await pg.close();}
