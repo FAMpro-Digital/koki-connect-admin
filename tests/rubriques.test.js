@@ -3,10 +3,10 @@ import test from 'node:test';import assert from 'node:assert/strict';import fs f
 import '../src/rubriques-contract.js';import '../src/numeros-contract.js';import {types,categories,resources} from '../src/model.js';
 const R=globalThis.KokiRubriquesContract,FICHIER=new URL('../src/rubriques-contract.js',import.meta.url);
 // Empreinte du contrat : identique dans les deux dépôts (public : assets/portail/rubriques-contract.js).
-const EMPREINTE='49d611b13171a8a39985fc1e63de3bc58557d90010d4c757f6bd49ec193091b2';
+const EMPREINTE='70b82c11e58ba82eaaf3cdff55fd55c3aeca8ffee37c63804c89d7b47ce1ac53';
 test('contrat Rubriques : identique dans les deux dépôts',()=>{assert.equal(createHash('sha256').update(fs.readFileSync(FICHIER)).digest('hex'),EMPREINTE);});
 test('les 8 rubriques de l’accueil public, dans le même ordre',()=>{
- assert.deepEqual(R.rubriques.map(r=>r.nom),['Transport','Commerces & Services','Éducation','Emplois & Opportunités','Sports & ASC','Santé','Événements','Services publics']);
+ assert.deepEqual(R.rubriques.map(r=>r.nom),['Transport','Commerces & Services','Éducation','Emplois & Opportunités','Sport','Santé','Événements','Services publics']);
  assert.equal(new Set(R.rubriques.map(r=>r.cle)).size,8);for(const r of R.rubriques)assert.match(r.couleur,/^#[0-9a-f]{6}$/);
 });
 test('chaque type de contenu appartient à une seule rubrique ou publication',()=>{
