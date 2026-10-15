@@ -102,3 +102,4 @@
 .rubrique-puce:hover{background:#e4f5e9;border-color:#9fc7ad}
 .dashboard-rubriques h2{margin-top:0}
 @media(max-width:760px){.workspace .sidebar .nav-bloc{display:none}.rubriques-cartes{grid-template-columns:1fr}}
+.evenement-en-cours{border-left:4px solid #f28c28;}

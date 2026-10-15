@@ -42,7 +42,8 @@
       "develop/admin-client-alignement": false,
       "develop/sports-asc": false,
       "develop/opportunites": false,
-      "develop/admin-rubriques": false
+      "develop/admin-rubriques": false,
+      "develop/evenements": false
     }
   }
 }
