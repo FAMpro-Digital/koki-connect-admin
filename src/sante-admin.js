@@ -76,7 +76,7 @@ export async function renderSante(main,ctx){
  const actions=n('div');actions.className='quick-actions';
  const add=button('Ajouter une structure de santé',()=>edit(),'primary');add.disabled=!editable;
  const alerte=button('Publier une alerte ou campagne Santé',()=>editor('contents',{type:'Annonces',categorie:'Santé'},'sante'));alerte.disabled=!editable;
- actions.append(add,alerte,button('📞 Numéros utiles (groupe Santé)',()=>navigate('numeros')),button('Actualiser',refresh));main.append(actions);
+ actions.append(add,alerte,button('📞 Numéros utiles (groupe Santé)',()=>navigate('numeros','sante')),button('Actualiser',refresh));main.append(actions);
  if(!configured){main.append(n('p','Connexion requise. Aucune donnée fictive affichée.'));return;}
  const rows=[];for(let offset=0;;offset+=200){const page=await result(db.from('koki_contents').select('*').eq('categorie','Santé').order('id').range(offset,offset+199));rows.push(...page);if(page.length<200)break;}
  if(!main.isConnected)return;

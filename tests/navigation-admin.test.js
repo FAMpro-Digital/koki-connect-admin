@@ -5,12 +5,15 @@ import {sousEntrees,rubriqueCourante,lireOuvertes,ecrireOuvertes} from '../src/n
 const R=globalThis.KokiRubriquesContract,r=cle=>R.rubriques.find(x=>x.cle===cle);
 const libelles=cle=>sousEntrees(R,r(cle)).map(e=>e.libelle);
 test('chaque rubrique s’ouvre sur ses vraies sous-rubriques',()=>{
- assert.deepEqual(libelles('transport'),['Courses','Chauffeurs','Véhicules','Tarifs Transport','Signalements']);
- assert.deepEqual(libelles('sports'),['Matchs et résultats','Équipes / ASC','📰 Publications']);
- assert.deepEqual(libelles('opportunites'),['Offres et opportunités','💼 Emplois','🤝 Stages','🎓 Formations','🏆 Concours','📚 Bourses','🌱 Financements']);
- assert.deepEqual(libelles('sante'),['Structures de santé','📞 Numéros utiles']);
- assert.deepEqual(libelles('services_publics'),['Annuaire des services','Guides des démarches','Avis officiels','📍 Lieux de la carte','📞 Numéros utiles']);
- assert.deepEqual(libelles('evenements'),['Agenda des événements']);
+ assert.deepEqual(libelles('transport'),['🪪 Renseignements','Courses','Chauffeurs','Véhicules','Tarifs Transport','Signalements','📞 Numéros utiles']);
+ assert.deepEqual(libelles('sports'),['🪪 Renseignements','Matchs et résultats','Équipes / ASC','📰 Publications','📍 Lieux de la carte']);
+ assert.deepEqual(libelles('opportunites'),['🪪 Renseignements','Offres et opportunités','💼 Emplois','🤝 Stages','🎓 Formations','🏆 Concours','📚 Bourses','🌱 Financements']);
+ assert.deepEqual(libelles('sante'),['🪪 Renseignements','Structures de santé','📞 Numéros utiles']);
+ assert.deepEqual(libelles('services_publics'),['🪪 Renseignements','Annuaire des services','Guides des démarches','Avis officiels','📍 Lieux de la carte','📞 Numéros utiles']);
+ assert.deepEqual(libelles('evenements'),['🪪 Renseignements','Agenda des événements']);
+ // Renseignements, numéros et lieux propres à chaque rubrique (filtre = rubrique).
+ const e=cle=>sousEntrees(R,r(cle));assert.deepEqual(e('sante').find(x=>x.cle==='numeros').query,'sante');assert.deepEqual(e('education').find(x=>x.cle==='lieux').query,'Éducation');
+ assert.equal(rubriqueCourante(R,'renseignements','evenements').cle,'evenements');assert.equal(rubriqueCourante(R,'numeros','transport').cle,'transport');
  for(const x of R.rubriques)assert.ok(sousEntrees(R,x).length>0,x.nom);
  const emplois=sousEntrees(R,r('opportunites')).find(e=>e.libelle==='💼 Emplois');assert.deepEqual([emplois.cle,emplois.query],['offres','Emplois']);
 });
