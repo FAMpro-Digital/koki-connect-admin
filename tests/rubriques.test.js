@@ -3,7 +3,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import fs f
 import '../src/rubriques-contract.js';import '../src/numeros-contract.js';import {types,categories,resources} from '../src/model.js';
 const R=globalThis.KokiRubriquesContract,FICHIER=new URL('../src/rubriques-contract.js',import.meta.url);
 // Empreinte du contrat : identique dans les deux dépôts (public : assets/portail/rubriques-contract.js).
-const EMPREINTE='a501b77a3b0cc47c46d9c0ad328680798fdcf0e88ba2a845bb1c28930efb6b4a';
+const EMPREINTE='5b067bb0d69d10d70bc2f06b0c98447942c47d20cd5faaf6d16290396e62115e';
 test('contrat Rubriques : identique dans les deux dépôts',()=>{assert.equal(createHash('sha256').update(fs.readFileSync(FICHIER)).digest('hex'),EMPREINTE);});
 test('les 8 rubriques de l’accueil public, dans le même ordre',()=>{
  assert.deepEqual(R.rubriques.map(r=>r.nom),['Transport','Commerces & Services','Éducation','Emplois & Opportunités','Sport','Santé','Événements','Services publics']);

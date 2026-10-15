@@ -2,14 +2,14 @@
 // Le menu latéral, la page « Rubriques » (téléphone) et le tableau de bord utilisent la même liste, dans le même ordre.
 // Une entrée : {cle, libelle, query?} ; cle est une route de navigate().
 
-// Sous-rubriques d'une rubrique : ses écrans dédiés, ses publications et leurs sous-catégories, puis les lieux
+// Sous-rubriques d'une rubrique : ses écrans dédiés, ses publications (Opportunités et Événements : écran dédié seulement) et leurs sous-catégories, puis les lieux
 // et numéros utiles qu'elle affiche dans l'application publique.
 export function sousEntrees(R,r){
  if(!r)return [];
  const out=[];const deja=new Set();const ajoute=(cle,libelle,query='')=>{const id=cle+'|'+query;if(deja.has(id))return;deja.add(id);out.push({cle,libelle,query});};
  if(!r.type&&!r.ecrans.length)ajoute('rubrique:'+r.cle,'🧭 Vue d’ensemble');
  for(const [k,label]of r.ecrans)ajoute(k,label);
- if(r.type&&r.type!=='Opportunités'){ajoute('contenus:'+r.type,'📰 Publications');for(const x of R.sousRubriques[r.type]||[])ajoute('contenus:'+r.type+':'+x.nom,x.icone+' '+x.nom);}
+ if(r.type&&r.type!=='Opportunités'&&r.type!=='Événements'){ajoute('contenus:'+r.type,'📰 Publications');for(const x of R.sousRubriques[r.type]||[])ajoute('contenus:'+r.type+':'+x.nom,x.icone+' '+x.nom);}
  if(r.type==='Opportunités')for(const x of R.sousRubriques[r.type]||[])ajoute('offres',x.icone+' '+x.nom,x.nom);
  if(r.lieux&&r.lieux!=='Santé')ajoute('lieux','📍 Lieux de la carte',r.lieux);
  if(r.numeros)ajoute('numeros','📞 Numéros utiles');
