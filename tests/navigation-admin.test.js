@@ -10,13 +10,14 @@ test('chaque rubrique s’ouvre sur ses vraies sous-rubriques',()=>{
  assert.deepEqual(libelles('opportunites'),['Offres et opportunités','💼 Emplois','🤝 Stages','🎓 Formations','🏆 Concours','📚 Bourses','🌱 Financements']);
  assert.deepEqual(libelles('sante'),['Structures de santé','📞 Numéros utiles']);
  assert.deepEqual(libelles('services_publics'),['🧭 Vue d’ensemble','📍 Lieux de la carte','📞 Numéros utiles']);
- assert.deepEqual(libelles('evenements'),['📰 Publications']);
+ assert.deepEqual(libelles('evenements'),['Agenda des événements']);
  for(const x of R.rubriques)assert.ok(sousEntrees(R,x).length>0,x.nom);
  const emplois=sousEntrees(R,r('opportunites')).find(e=>e.libelle==='💼 Emplois');assert.deepEqual([emplois.cle,emplois.query],['offres','Emplois']);
 });
 test('rubrique courante : la bonne rubrique reste ouverte, y compris pour un écran filtré',()=>{
  assert.equal(rubriqueCourante(R,'signalements').cle,'transport');assert.equal(rubriqueCourante(R,'offres','Stages').cle,'opportunites');
  assert.equal(rubriqueCourante(R,'lieux','Services publics').cle,'services_publics');assert.equal(rubriqueCourante(R,'sport-equipes').cle,'sports');
+ assert.equal(rubriqueCourante(R,'evenements').cle,'evenements');
  assert.equal(rubriqueCourante(R,'dashboard'),null);
 });
 test('rubriques ouvertes mémorisées sur l’appareil, stockage indisponible toléré',()=>{
