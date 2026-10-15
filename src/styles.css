@@ -80,3 +80,25 @@
 .sport-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.sport-table th{background:#0b5a3c;color:#fff;padding:8px 6px;font-size:13px}.sport-table td{padding:7px 6px;border-top:1px solid #e3ebe6;text-align:center}.sport-table td:nth-child(2){text-align:left;font-weight:600}.sport-table tr:nth-child(2) td{background:#fff4e8}
 /* Emplois & Opportunités */
 .offre-bientot{border:2px solid #F28C28;background:#FFF8F0}.offre-expiree{opacity:.7;border-style:dashed}
+/* Menu en accordéon : chaque rubrique s'ouvre sur ses sous-rubriques */
+.workspace .sidebar .nav-bloc{display:flex;flex-direction:column;gap:2px;border-radius:14px}
+.workspace .sidebar .nav-bloc:has(.nav-rubrique[aria-expanded=true]){background:rgba(255,255,255,.07);padding-bottom:6px}
+.workspace .sidebar button.nav-rubrique{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;width:100%;border-left:5px solid var(--rubrique,#fff);text-align:left;padding:10px 12px}
+.workspace .sidebar .nav-compte{min-width:22px;padding:0 6px;border-radius:999px;background:rgba(255,255,255,.16);font-size:11px;text-align:center}
+.workspace .sidebar .nav-chevron{display:inline-block;transition:transform .2s ease;transform:rotate(-90deg);font-size:12px;opacity:.8}
+.workspace .sidebar .nav-rubrique[aria-expanded=true] .nav-chevron{transform:rotate(0)}
+.workspace .sidebar .nav-rubrique-active{background:rgba(255,255,255,.14)}
+.workspace .sidebar .nav-sous{display:flex;flex-direction:column;gap:2px;margin:2px 0 0 14px;padding-left:10px;border-left:2px solid var(--rubrique,#fff)}
+.workspace .sidebar .nav-sous[hidden]{display:none}
+.workspace .sidebar button.nav-sub{margin-left:0;padding:8px 10px;font-size:14px}
+.workspace .sidebar button.nav-sub[aria-current=page]{background:#fff;color:#0b5a3c;font-weight:700}
+/* Cartes des rubriques (tableau de bord, page Rubriques) */
+.rubriques-cartes{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:12px 0 18px}
+.rubrique-carte{background:#fff;border:1px solid #e1e8e4;border-top:5px solid var(--rubrique,#185b35);border-radius:16px;padding:14px}
+.rubrique-carte h3{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:17px}
+.rubrique-carte-icone{width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:var(--rubrique,#185b35);color:#fff}
+.rubrique-carte-sous{display:flex;flex-wrap:wrap;gap:6px}
+.rubrique-puce{min-height:36px;padding:6px 12px;border-radius:999px;border:1px solid #d3dfd6;background:#f4f7f5;color:#173126;font-size:14px}
+.rubrique-puce:hover{background:#e4f5e9;border-color:#9fc7ad}
+.dashboard-rubriques h2{margin-top:0}
+@media(max-width:760px){.workspace .sidebar .nav-bloc{display:none}.rubriques-cartes{grid-template-columns:1fr}}

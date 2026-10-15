@@ -1,0 +1,13 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/src/styles.css"></head>
+<body><div id="app" class="workspace"><header><strong>KOKI CONNECT ADMIN</strong></header><div id="shell"><nav class="sidebar"></nav><main id="main"><h1>Vue d’ensemble</h1></main></div></div>
+<script type="module">
+import '/src/rubriques-contract.js';import {menuRubriques,cartesRubriques} from '/src/navigation-admin.js';
+const R=globalThis.KokiRubriquesContract;const n=(t,x,c)=>{const e=document.createElement(t);if(x!=null)e.textContent=x;if(c)e.className=c;return e;};
+const button=(t,fn,c='')=>{const e=n('button',t);e.type='button';e.className=c;e.onclick=fn;return e;};
+const p=new URLSearchParams(location.search),current=p.get('k')||'dashboard',query=p.get('q')||'';
+const side=document.querySelector('.sidebar');const go=(k,l)=>{const b=button(l,()=>{});if(k===current)b.setAttribute('aria-current','page');side.append(b);};
+go('dashboard','⌂ Tableau de bord');const g=n('p','Rubriques de l’application','nav-group');side.append(g);
+menuRubriques(side,R,{n,button,navigate:(k,q)=>{location.search='?k='+encodeURIComponent(k)+'&q='+encodeURIComponent(q||'');},current,query});
+side.append(n('p','Publications','nav-group'));for(const x of R.publications)go(x.ecran||'contenus:'+x.type,x.icone+' '+x.nom);
+const rubs=n('section',null,'panel dashboard-rubriques');rubs.append(n('h2','🧭 Rubriques de l’application'),cartesRubriques(R,{n,button,navigate:()=>{}}));document.querySelector('main').append(rubs);
+</script></body></html>
