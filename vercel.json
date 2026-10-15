@@ -43,7 +43,8 @@
       "develop/sports-asc": false,
       "develop/opportunites": false,
       "develop/admin-rubriques": false,
-      "develop/evenements": false
+      "develop/evenements": false,
+      "develop/services-publics": false
     }
   }
 }
