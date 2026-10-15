@@ -17,7 +17,7 @@ const rubriques=gele([
  gele({cle:'sports',nom:'Sport',icone:'⚽',couleur:'#008444',type:'Sports & ASC',ecrans:gele([gele(['sport-matchs','Matchs et résultats']),gele(['sport-equipes','Équipes / ASC'])])}),
  gele({cle:'sante',nom:'Santé',icone:'🏥',couleur:'#d8004f',lieux:'Santé',categorie:'Santé',numeros:gele(['Santé']),ecrans:gele([gele(['sante','Structures de santé'])])}),
  gele({cle:'evenements',nom:'Événements',icone:'📅',couleur:'#ef153b',type:'Événements',ecrans:gele([gele(['evenements','Agenda des événements'])])}),
- gele({cle:'services_publics',nom:'Services publics',icone:'🏛️',couleur:'#820ed8',lieux:'Services publics',numeros:gele(['Administration','Eau et électricité','Sécurité']),ecrans:gele([])})
+ gele({cle:'services_publics',nom:'Services publics',icone:'🏛️',couleur:'#820ed8',lieux:'Services publics',numeros:gele(['Administration','Eau et électricité','Sécurité']),ecrans:gele([gele(['services-publics','Annuaire des services']),gele(['demarches','Guides des démarches']),gele(['avis-officiels','Avis officiels'])])})
 ]);
 // Les publications de l'accueil public (blocs « Actualités de Koki », « Annonces »…), puis les numéros utiles et les lieux de la carte.
 const publications=gele([
