@@ -2,6 +2,8 @@
 // au format du contrat partagé numeros-contract.js (identique dans l'application publique).
 import './numeros-contract.js';
 const K=globalThis.KokiNumeroContract;
+// Rubrique propriétaire des numéros (ctx.query = clé de rubrique) : seuls ses groupes sont affichés et proposés.
+export function groupesRubrique(R,cle){const r=R?.rubriques?.find(x=>x.cle===cle&&x.numeros);return r?{rubrique:r,groupes:[...r.numeros]}:{rubrique:null,groupes:[...K.groupes]};}
 
 // Numéros d'urgence nationaux vérifiés le 2026-10-10 (source publique citée), importés en brouillons.
 const SOURCE_URGENCES='Senego.com, liste « Numéros d’urgence au Sénégal » (consultée le 2026-10-10)';
@@ -36,11 +38,13 @@ export async function renderNumeros(main,ctx){
  const {n,button,field,formPanel,configured,db,result,guard,can,account,write,error,refresh}=ctx;
  const editable=configured&&can(account?.role,'content');
  main.append(n('p','Numéros affichés dans la rubrique « Numéros utiles » de Koki Connect. Indiquez toujours la source. Les numéros d’urgence intégrés à l’application restent affichés en secours.'));
- let rows=[];
+ const {rubrique,groupes}=groupesRubrique(globalThis.KokiRubriquesContract,ctx.query);
+ if(rubrique)main.append(n('p','Rubrique « '+rubrique.nom+' » : seuls ses numéros sont affichés ici (groupe'+(groupes.length>1?'s ':' ')+groupes.join(', ')+'). Les autres numéros restent dans leur propre rubrique.'));
+ let rows=[],tous=[];
  async function edit(row,initial){await guard();if(!can(account.role,'content'))throw Error('Permission refusée.');const old=row?K.decode(row):initial||{};
   main.replaceChildren(n('h1',row?'Modifier un numéro':'Ajouter un numéro'));const f=formPanel(),m={};
   field(f,m,'titre','Nom du service','text',null,row?.titre||old.titre||'',true);
-  field(f,m,'groupe','Groupe','text',K.groupes,old.groupe||K.groupes[1],true);
+  field(f,m,'groupe','Groupe','text',old.groupe&&!groupes.includes(old.groupe)?[...groupes,old.groupe]:groupes,old.groupe||(rubrique?groupes[0]:K.groupes[1]),true);
   field(f,m,'telephone','Téléphone (+221 33 000 00 00, ou numéro court : 17)','tel',null,old.telephone||'',true);
   field(f,m,'description','Description courte (300 caractères maximum)','textarea',null,old.description||'');
   field(f,m,'source','Source (obligatoire)','text',null,row?.source||old.source||'',true);
@@ -50,14 +54,15 @@ export async function renderNumeros(main,ctx){
   m.description.maxLength=300;m.titre.maxLength=180;
   const submit=n('button','Enregistrer le numéro');submit.type='submit';submit.className='primary';f.append(submit,button('Annuler',refresh));
   f.onsubmit=async e=>{e.preventDefault();submit.disabled=true;try{await guard();const v=Object.fromEntries(Object.entries(m).map(([k,x])=>[k,x.value.trim()]));const data=construireLigne(v);
-   const memes=doublons(rows,v.telephone,row?.id);if(memes.length&&!confirm('Ce numéro existe déjà : « '+memes.map(x=>x.titre).join(', ')+' ». Enregistrer quand même ?'))return;
+   const memes=doublons(tous,v.telephone,row?.id);if(memes.length&&!confirm('Ce numéro existe déjà : « '+memes.map(x=>x.titre).join(', ')+' ». Enregistrer quand même ?'))return;
    await write('koki_contents',data,row);await refresh();}catch(err){error(err);}finally{submit.disabled=false;}};
   main.append(f);}
  const add=button('Ajouter un numéro',()=>edit(),'primary');add.disabled=!editable;
- const importer=button('Importer les numéros d’urgence nationaux (brouillons)',async()=>{await guard();const manquants=urgencesNationales.filter(x=>!rows.some(r=>K.decode(r)&&chiffres(K.decode(r).telephone)===chiffres(x.telephone)));if(!manquants.length)throw Error('Les numéros d’urgence nationaux sont déjà enregistrés.');if(!confirm(manquants.length+' numéro(s) seront créés en brouillon. Relisez-les avant publication. Continuer ?'))return;for(const x of manquants)await write('koki_contents',construireLigne({...x,statut:'brouillon'}));await refresh();});importer.disabled=!editable;
- main.append(add,importer,button('Actualiser',refresh));
+ const importer=button('Importer les numéros d’urgence nationaux (brouillons)',async()=>{await guard();const manquants=urgencesNationales.filter(x=>!tous.some(r=>K.decode(r)&&chiffres(K.decode(r).telephone)===chiffres(x.telephone)));if(!manquants.length)throw Error('Les numéros d’urgence nationaux sont déjà enregistrés.');if(!confirm(manquants.length+' numéro(s) seront créés en brouillon. Relisez-les avant publication. Continuer ?'))return;for(const x of manquants)await write('koki_contents',construireLigne({...x,statut:'brouillon'}));await refresh();});importer.disabled=!editable;
+ main.append(add);if(!rubrique||groupes.includes('Urgences nationales'))main.append(importer);main.append(button('Actualiser',refresh));
  if(!configured){main.append(n('p','Connexion requise. Aucune donnée fictive affichée.'));return;}
- for(let offset=0;;offset+=200){const page=await result(db.from('koki_contents').select('*').eq('type',K.type).eq('categorie',K.categorie).order('id').range(offset,offset+199));rows.push(...page.filter(K.decode));if(page.length<200)break;}
+ for(let offset=0;;offset+=200){const page=await result(db.from('koki_contents').select('*').eq('type',K.type).eq('categorie',K.categorie).order('id').range(offset,offset+199));tous.push(...page.filter(K.decode));if(page.length<200)break;}
+ rows=tous.filter(r=>groupes.includes(K.decode(r).groupe));
  if(!main.isConnected)return;
  const search=n('input');search.type='search';search.placeholder='Rechercher un service ou un numéro…';search.setAttribute('aria-label','Rechercher un numéro utile');const filtre=n('select');filtre.setAttribute('aria-label','Filtrer par état');for(const x of ['Tous','Publié','Brouillon','Programmé','Archivé']){const o=n('option',x);o.value=x;filtre.append(o);}
  main.append(search,filtre);const grid=n('div');grid.className='list';main.append(grid);
@@ -65,7 +70,7 @@ export async function renderNumeros(main,ctx){
   const found=rows.filter(r=>{const v=K.decode(r);return (filtre.value==='Tous'||etat(r)===filtre.value)&&(!q||(r.titre+' '+v.groupe+' '+v.description).toLocaleLowerCase('fr').includes(q)||(qc&&chiffres(v.telephone).includes(qc)));})
    .sort((a,b)=>K.groupes.indexOf(K.decode(a).groupe)-K.groupes.indexOf(K.decode(b).groupe)||a.titre.localeCompare(b.titre,'fr'));
   for(const row of found){const v=K.decode(row),card=n('article');card.className='card';card.append(n('h2',row.titre),n('p',etat(row)+' · '+v.groupe+' · '+v.telephone));if(v.description)card.append(n('p',v.description));card.append(n('p','Source : '+(row.source||'non renseignée')+(v.verifie_le?' · vérifié le '+v.verifie_le:'')));
-   if(!v.archive&&doublons(rows,v.telephone,row.id).length)card.append(n('p','⚠ Même numéro qu’une autre fiche active.'));
+   if(!v.archive&&doublons(tous,v.telephone,row.id).length)card.append(n('p','⚠ Même numéro qu’une autre fiche active.'));
    const modify=button('Modifier',()=>edit(row));modify.disabled=!editable;card.append(modify);
    const toggle=v.archive?button('Réactiver (brouillon)',async()=>{await guard();await write('koki_contents',{statut:'brouillon',texte:K.encode({...v,archive:false})},row);await refresh();}):button('Archiver',async()=>{if(!confirm('Archiver ce numéro et le retirer de l’application publique ?'))return;await guard();await write('koki_contents',{statut:'brouillon',texte:K.encode({...v,archive:true})},row);await refresh();});
    toggle.disabled=!editable;card.append(toggle);grid.append(card);}

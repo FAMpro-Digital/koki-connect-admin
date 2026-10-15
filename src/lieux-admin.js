@@ -32,15 +32,18 @@ export function bilanLieux(lignes,now=Date.now()){
 export async function renderLieux(main,ctx){
  const {n,button,field,formPanel,configured,db,result,guard,can,account,write,error,refresh,navigate}=ctx;
  const editable=configured&&can(account?.role,'content');
+ // Lieux d'une rubrique (ctx.query = catégorie de la carte) : seule cette catégorie est affichée et proposée.
+ const propre=L.genres.includes(ctx.query)?ctx.query:null;
+ if(propre)main.append(n('p','Rubrique : seuls les lieux « '+propre+' » sont affichés ici. Les autres catégories restent dans leur rubrique ou dans « Lieux de la carte ».'));
  main.append(n('p','Lieux affichés dans la Carte de l’application, dans « Autour de moi » et dans les listes Départ / Destination du Transport. La carte intégrée vient d’OpenStreetMap : ici, vous ajoutez des lieux (mairie, poste, gendarmerie, terrain…), vous corrigez un nom, une catégorie ou une position, ou vous masquez un lieu. Les structures de santé se gèrent dans l’écran Santé.'));
 
  async function edit(ligne={}){
   await guard();if(!can(account.role,'content'))throw Error('Permission refusée.');
-  const {ref,row,v}=ligne;const old=v||{genre:ref?.categorie&&L.genres.includes(ref.categorie)?ref.categorie:'Services publics',latitude:ref?.latitude??null,longitude:ref?.longitude??null,description:''};
+  const {ref,row,v}=ligne;const old=v||{genre:ref?.categorie&&L.genres.includes(ref.categorie)?ref.categorie:propre||'Services publics',latitude:ref?.latitude??null,longitude:ref?.longitude??null,description:''};
   main.replaceChildren(n('h1',ref?'Corriger un lieu de la carte':row?'Modifier un lieu':'Ajouter un lieu'));const f=formPanel(),m={};
   if(ref)f.append(n('p','Lieu de la carte intégrée : « '+ref.nom+' » ('+ref.categorie+'). Votre correction remplace ce lieu dans l’application, sans modifier OpenStreetMap.'));
   field(f,m,'titre','Nom du lieu','text',null,row?.titre||ref?.nom||'',true);
-  field(f,m,'genre','Catégorie','text',L.genres,old.genre,true);
+  field(f,m,'genre','Catégorie','text',propre&&old.genre===propre?[propre]:L.genres,old.genre,true);
   field(f,m,'lieu','Village / quartier','text',null,row?.lieu||'');
   field(f,m,'description','Description courte (facultatif, 500 caractères)','textarea',null,old.description||'');
   const gps={};positionField(f,gps,{latitude:old.latitude,longitude:old.longitude},{onError:error});
@@ -84,7 +87,7 @@ export async function renderLieux(main,ctx){
  for(const [t,val,note]of [['Carte intégrée',b.carte,'Lieux OpenStreetMap'],['Lieux ajoutés',b.ajoutes,'Publiés par l’administration'],['Corrigés',b.corriges,b.masques+' masqué(s)'],['Services publics',b.parCategorie['Services publics'],'Visibles dans la rubrique']]){const c=n('article');c.className='card metric';const d=n('div');d.append(n('p',t),n('strong',String(val)),n('small',note));c.append(d);grid.append(c);}
  main.append(grid);
  const search=n('input');search.type='search';search.placeholder='Rechercher un lieu ou un village…';search.setAttribute('aria-label','Rechercher un lieu');search.value=ctx.query&&!L.genres.includes(ctx.query)?ctx.query:'';
- const filtre=n('select');filtre.setAttribute('aria-label','Filtrer par catégorie');for(const x of ['Toutes les catégories',...L.genres,'Ajoutés','Corrigés ou masqués','Brouillons et archivés']){const o=n('option',x);o.value=x;filtre.append(o);}
+ const filtre=n('select');filtre.setAttribute('aria-label','Filtrer par catégorie');for(const x of propre?[propre]:['Toutes les catégories',...L.genres,'Ajoutés','Corrigés ou masqués','Brouillons et archivés']){const o=n('option',x);o.value=x;filtre.append(o);}
  if(L.genres.includes(ctx.query))filtre.value=ctx.query;
  const list=n('div');list.className='list';main.append(search,filtre,list);
  function garde(x){const s=etatLieu(x.row,x.v||{}),cat=x.v?.genre||x.ref?.categorie;switch(filtre.value){case 'Toutes les catégories':return true;case 'Ajoutés':return !x.ref;case 'Corrigés ou masqués':return !!(x.ref&&x.row&&!x.v.archive);case 'Brouillons et archivés':return ['Brouillon','Programmé','Archivé'].includes(s);default:return cat===filtre.value;}}

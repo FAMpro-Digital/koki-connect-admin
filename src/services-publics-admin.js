@@ -116,7 +116,7 @@ export async function renderServicesPublics(main,ctx){
 
  const actions=n('div');actions.className='quick-actions';
  const add=vue==='services-publics'?button('Ajouter un service public',()=>editService(),'primary'):vue==='demarches'?button('Ajouter un guide de démarche',()=>editDemarche(),'primary'):button('Publier un avis officiel',()=>editor('contents',{type:'Annonces',categorie:'Avis important'},'avis-officiels'),'primary');
- add.disabled=!editable;actions.append(add,button('📞 Numéros utiles',()=>navigate('numeros')),button('📍 Lieux de la carte',()=>navigate('lieux','Services publics')),button('Actualiser',refresh));main.append(actions);
+ add.disabled=!editable;actions.append(add,button('📞 Numéros utiles',()=>navigate('numeros','services_publics')),button('📍 Lieux de la carte',()=>navigate('lieux','Services publics')),button('Actualiser',refresh));main.append(actions);
  if(!configured){main.append(n('p','Connexion requise. Aucune donnée fictive affichée.'));return;}
  await charger();if(!main.isConnected)return;
  const b=bilanServices(rows);const grid=n('div');grid.className='grid dashboard-metrics';
