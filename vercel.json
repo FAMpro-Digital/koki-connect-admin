@@ -44,7 +44,8 @@
       "develop/opportunites": false,
       "develop/admin-rubriques": false,
       "develop/evenements": false,
-      "develop/services-publics": false
+      "develop/services-publics": false,
+      "develop/rubriques-uniques": false
     }
   }
 }

@@ -8,13 +8,13 @@ const gele=x=>Object.freeze(x);
 // Les 8 rubriques de l'accueil public, dans l'ordre d'affichage.
 const rubriques=gele([
  gele({cle:'transport',nom:'Transport',icone:'🚕',couleur:'#245d88',
-  ecrans:gele([gele(['courses','Courses']),gele(['chauffeurs','Chauffeurs']),gele(['vehicules','Véhicules']),gele(['tarifs','Tarifs Transport']),gele(['signalements','Signalements'])])}),
- gele({cle:'commerce',nom:'Commerces & Services',icone:'🛍️',couleur:'#c76a00',
+  numeros:gele(['Transport']),ecrans:gele([gele(['courses','Courses']),gele(['chauffeurs','Chauffeurs']),gele(['vehicules','Véhicules']),gele(['tarifs','Tarifs Transport']),gele(['signalements','Signalements'])])}),
+ gele({cle:'commerce',nom:'Commerces & Services',icone:'🛍️',couleur:'#c76a00',lieux:'Commerces',
   ecrans:gele([gele(['boutique-en-ligne','Boutique en ligne']),gele(['validations','Validations']),gele(['professionnels','Fiches professionnelles']),gele(['boutiques','Boutiques']),gele(['produits','Produits']),
    gele(['services','Services']),gele(['commandes','Commandes']),gele(['demandes_services','Demandes de services'])])}),
- gele({cle:'education',nom:'Éducation',icone:'🎓',couleur:'#087dff',ecrans:gele([gele(['education-apercu','Vue d’ensemble']),gele(['education','Établissements scolaires']),gele(['livres','Bibliothèque (livres)'])])}),
+ gele({cle:'education',nom:'Éducation',icone:'🎓',couleur:'#087dff',lieux:'Éducation',ecrans:gele([gele(['education-apercu','Vue d’ensemble']),gele(['education','Établissements scolaires']),gele(['livres','Bibliothèque (livres)'])])}),
  gele({cle:'opportunites',nom:'Emplois & Opportunités',icone:'💼',couleur:'#008397',type:'Opportunités',ecrans:gele([gele(['offres','Offres et opportunités'])])}),
- gele({cle:'sports',nom:'Sport',icone:'⚽',couleur:'#008444',type:'Sports & ASC',ecrans:gele([gele(['sport-matchs','Matchs et résultats']),gele(['sport-equipes','Équipes / ASC'])])}),
+ gele({cle:'sports',nom:'Sport',icone:'⚽',couleur:'#008444',type:'Sports & ASC',lieux:'Sports',ecrans:gele([gele(['sport-matchs','Matchs et résultats']),gele(['sport-equipes','Équipes / ASC'])])}),
  gele({cle:'sante',nom:'Santé',icone:'🏥',couleur:'#d8004f',lieux:'Santé',categorie:'Santé',numeros:gele(['Santé']),ecrans:gele([gele(['sante','Structures de santé'])])}),
  gele({cle:'evenements',nom:'Événements',icone:'📅',couleur:'#ef153b',type:'Événements',ecrans:gele([gele(['evenements','Agenda des événements'])])}),
  gele({cle:'services_publics',nom:'Services publics',icone:'🏛️',couleur:'#820ed8',lieux:'Services publics',numeros:gele(['Administration','Eau et électricité','Sécurité']),ecrans:gele([gele(['services-publics','Annuaire des services']),gele(['demarches','Guides des démarches']),gele(['avis-officiels','Avis officiels'])])})
@@ -46,8 +46,19 @@ function rubriqueDe(cle){
  for(const p of publications){if(p.cle===cle||p.type===type||p.ecran===cle)return p;}
  return null;
 }
+// Fiche « Renseignements » d'une rubrique : présentation, responsable, contact, affichage sur l'accueil.
+// Stockage : koki_contents, type=Informations utiles, categorie=Rubriques, titre = nom de la rubrique, texte = JSON versionné.
+const FICHE='koki.rubrique.fiche',categorieFiche='Rubriques',telRe=/^\+?[0-9 ()-]{6,24}$/;
+const txt=(v,max)=>typeof v==='string'&&v.length<=max;
+function checkFiche(v){return !!v&&v.schema===FICHE&&v.version===1&&rubriques.some(r=>r.cle===v.cle)&&txt(v.presentation,600)&&txt(v.responsable,120)&&txt(v.telephone,24)&&(!v.telephone||telRe.test(v.telephone))&&txt(v.horaires,120)&&typeof v.visible==='boolean';}
+function decodeFiche(row){if(row?.type!=='Informations utiles'||row.categorie!==categorieFiche)return null;try{const v=JSON.parse(row.texte);return checkFiche(v)?v:null;}catch{return null;}}
+function encodeFiche(v){const s={schema:FICHE,version:1,cle:String(v.cle||''),presentation:String(v.presentation||'').trim(),responsable:String(v.responsable||'').trim(),telephone:String(v.telephone||'').trim(),horaires:String(v.horaires||'').trim(),visible:v.visible!==false};
+ if(!checkFiche(s)){if(!rubriques.some(r=>r.cle===s.cle))throw Error('Rubrique inconnue.');if(s.telephone&&!telRe.test(s.telephone))throw Error('Téléphone du responsable invalide.');if(s.presentation.length>600)throw Error('Présentation trop longue (600 caractères maximum).');throw Error('Renseignements invalides.');}
+ return JSON.stringify(s);}
+// Fiche la plus récente de chaque rubrique (publiée uniquement côté application).
+function fiches(rows){const out={};for(const row of rows||[]){const v=decodeFiche(row);if(!v)continue;const t=Date.parse(row.updated_at||row.publication)||0;if(!out[v.cle]||t>out[v.cle].t)out[v.cle]={row,v,t};}return out;}
 function libelle(r){return r?r.icone+' '+r.nom:'';}
 function categoriesSousRubrique(type,nom){const s=(sousRubriques[type]||[]).find(x=>x.nom===nom);return s?s.categories:null;}
-root.KokiRubriquesContract=gele({rubriques,publications,sousRubriques,rubriqueDe,libelle,categoriesSousRubrique});
+root.KokiRubriquesContract=gele({rubriques,publications,sousRubriques,rubriqueDe,libelle,categoriesSousRubrique,categorieFiche,decodeFiche,encodeFiche,fiches});
 if(typeof module!=='undefined'&&module.exports)module.exports=root.KokiRubriquesContract;
 })(globalThis);
