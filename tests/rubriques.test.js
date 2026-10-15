@@ -29,7 +29,7 @@ test('sous-rubriques, catégories et groupes de numéros existent réellement',(
 });
 test('le menu de l’administration est construit à partir du contrat, sans liste figée',()=>{
  const app=fs.readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
- assert.match(app,/import '\.\/rubriques-contract\.js';/);assert.match(app,/for\(const r of R\.rubriques\)/);assert.match(app,/for\(const x of R\.publications\)/);
+ assert.match(app,/import '\.\/rubriques-contract\.js';/);assert.match(fs.readFileSync(new URL('../src/navigation-admin.js',import.meta.url),'utf8'),/for\(const r of R\.rubriques\)/);assert.match(app,/menuRubriques\(side,R,/);assert.match(app,/for\(const x of R\.publications\)/);
  assert.doesNotMatch(app,/\['contents','📰 Contenus & publicités'\]/);assert.doesNotMatch(app,/Object\.entries\(resources\)\.map/);
  assert.match(app,/\['rubriques','🧭 Rubriques'\]/);
 });
