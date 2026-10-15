@@ -78,3 +78,5 @@
 .sport-score-rapide button{min-width:44px;min-height:40px}.sport-score{min-width:70px;text-align:center;font-size:22px;font-variant-numeric:tabular-nums}
 .sport-score-rapide select{min-height:40px}
 .sport-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.sport-table th{background:#0b5a3c;color:#fff;padding:8px 6px;font-size:13px}.sport-table td{padding:7px 6px;border-top:1px solid #e3ebe6;text-align:center}.sport-table td:nth-child(2){text-align:left;font-weight:600}.sport-table tr:nth-child(2) td{background:#fff4e8}
+/* Emplois & Opportunités */
+.offre-bientot{border:2px solid #F28C28;background:#FFF8F0}.offre-expiree{opacity:.7;border-style:dashed}
