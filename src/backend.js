@@ -1,3 +1,4 @@
+import {authDestination,recoveryURL} from './auth-destination.js';
 import {isProcessedImage,inspectImage,MAX_OUTPUT} from './image-processing.js';
 import {createBusinessClient} from './business-client.js';
 import {createClient} from '@supabase/supabase-js';
@@ -7,8 +8,7 @@ const url=import.meta.env.VITE_SUPABASE_URL,key=import.meta.env.VITE_SUPABASE_PU
 // Refuse une base locale hors « npm run dev:local » et toute base distante en mode local.
 export const target=checkBackendTarget({url,key,mode:import.meta.env.MODE,dev:import.meta.env.DEV});
 export const configured=target.configured;
-export const authLinkError=new URLSearchParams(location.hash.slice(1)).has('error')||new URLSearchParams(location.hash.slice(1)).has('error_code');
-export const onboarding=['invite','recovery'].includes(new URLSearchParams(location.hash.slice(1)).get('type'));
+export const {error:authLinkError,onboarding}=authDestination(location.href);
 export const db=configured?createClient(url,key,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 const businessStorage=(()=>{try{return sessionStorage;}catch{return null;}})();
 export const business=createBusinessClient(db,{enabled:import.meta.env.VITE_BUSINESS_RPC_ENABLED==='true',storage:businessStorage});
@@ -24,5 +24,5 @@ export async function bookURL(path){const data=await result(db.storage.from('kok
 export async function bookRemove(path){if(path)await result(db.storage.from('koki-livres').remove([path]));}
 export async function imageURL(path){const data=await result(db.storage.from('koki-media').createSignedUrl(path,120));return data.signedUrl;}
 
-export const recoveryRedirect=import.meta.env.VITE_ADMIN_PREVIEW_URL||location.origin;
+export const recoveryRedirect=recoveryURL(import.meta.env.VITE_ADMIN_PREVIEW_URL||location.origin);
 export const publicApplicationURL=import.meta.env.VITE_PUBLIC_PREVIEW_URL||(import.meta.env.VITE_BUSINESS_RPC_ENABLED==='true'?null:'https://koki-connect.vercel.app/');
