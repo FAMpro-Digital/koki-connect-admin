@@ -13,7 +13,7 @@ function select(values,value){const s=n('select');for(const v of values){const o
 function input(type,value){const i=n(type==='textarea'?'textarea':'input');if(type!=='textarea')i.type=type;if(type==='number'){i.inputMode='numeric';i.min='0';i.step='1';}i.value=value??'';return i;}
 const date=v=>v?new Date(v).toLocaleString('fr-FR',{timeZone:'Africa/Dakar',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
 const libelleDecision=d=>({approve:'Approuvée',reject:'Refusée',suspend:'Suspendue',archive:'Archivée',approve_changes:'Modifications approuvées',reject_changes:'Modifications refusées',correction:'Corrigée par l’administration'})[d]||d;
-function badge(row){const s=row.statut,lock=row.payload?.moderation_lock;const b=n('span',lock?'Suspendu (administration)':s,'com-badge com-'+(lock?'alerte':({'Actif':'ok','Disponible':'ok','À valider':'attente','En attente':'attente','Refusé':'alerte','Suspendu':'alerte','Fermé':'alerte','Archivé':'neutre','Épuisé':'info','Indisponible':'info','Masqué':'info'})[s]||'neutre'));return b;}
+function badge(row){const s=row.statut,lock=row.payload?.moderation_lock;const b=n('span',s==='Masqué'&&row.payload?.moderation?.decision==='pending_review'?'En attente de validation':lock?'Suspendu (administration)':s,'com-badge com-'+(lock?'alerte':({'Actif':'ok','Disponible':'ok','À valider':'attente','En attente':'attente','Refusé':'alerte','Suspendu':'alerte','Fermé':'alerte','Archivé':'neutre','Épuisé':'info','Indisponible':'info','Masqué':'info'})[s]||'neutre'));return b;}
 function prix(p,kind){if(kind==='services')return p.tarif==='devis'||p.prix==null?'Sur devis':C.formaterPrix(p.prix);if(kind==='produits')return C.formaterPrix(p.prix)+(p.ancien_prix?' (avant '+C.formaterPrix(p.ancien_prix)+')':'');return '';}
 function valeur(v,champ){if(champ==='photos')return (v||[]).length+' photo'+((v||[]).length>1?'s':'');if(champ==='telephone'||champ==='whatsapp')return v?C.afficherTelephone(v):'—';return v??'—';}
 function infos(row){
@@ -69,10 +69,10 @@ export async function commerceDashboard(host,ctx){
  if(!ctx.api.enabled){sec.append(n('p','Indicateurs disponibles après l’activation du serveur Commerces & Services.'));return;}
  let s;try{await ctx.guard();s=await ctx.api.run('admin_stats',{});}catch(e){sec.append(n('p','Indicateurs indisponibles : '+e.message));return;}
  const grid=n('div',null,'grid dashboard-metrics com-metrics');
- const attente=s.inscriptions_en_attente+s.boutiques_en_attente+s.modifications_en_attente;
+ const attente=s.inscriptions_en_attente+s.boutiques_en_attente+s.modifications_en_attente+(s.produits_en_attente||0);
  for(const [label,value,note,target] of [
   ['Professionnels inscrits',s.professionnels_inscrits,'Toutes fiches, quel que soit leur statut','professionnels'],
-  ['Fiches en attente de validation',attente,s.inscriptions_en_attente+' inscription(s) · '+s.boutiques_en_attente+' boutique(s) · '+s.modifications_en_attente+' modification(s)','validations'],
+  ['Fiches en attente de validation',attente,s.inscriptions_en_attente+' inscription(s) · '+s.boutiques_en_attente+' boutique(s) · '+s.modifications_en_attente+' modification(s) · '+(s.produits_en_attente||0)+' produit(s)','validations'],
   ['Boutiques actives',s.boutiques_actives,'Statut Actif','boutiques'],
   ['Produits publiés',s.produits_publies,'Visibles dans le catalogue (disponibles ou épuisés)','produits'],
   ['Services disponibles',s.services_disponibles,'Visibles dans le catalogue','services'],
@@ -90,8 +90,8 @@ export async function renderValidations(main,ctx){
  const zone=n('div',null,'com-queue');main.append(zone);
  async function refresh(){
   zone.replaceChildren(n('p','Chargement…'));let rows;try{await ctx.guard();rows=await ctx.api.run('admin_queue',{});}catch(e){zone.replaceChildren(n('p',e.message));return;}
-  zone.replaceChildren(n('p',rows.length?rows.length+' demande(s) à traiter, les plus anciennes en premier.':'Aucune demande en attente.','com-count'),btn('Actualiser',refresh));
-  for(const [type,titre] of [['inscription','Nouvelles inscriptions professionnelles'],['boutique','Nouvelles boutiques'],['modification','Modifications de fiches en ligne']]){
+  zone.replaceChildren(n('p',rows.length?rows.length+' demande(s) à traiter, regroupées par type.':'Aucune demande en attente.','com-count'),btn('Actualiser',refresh));
+  for(const [type,titre] of [['inscription','Nouvelles inscriptions professionnelles'],['boutique','Nouvelles boutiques'],['modification','Modifications de fiches en ligne'],['produit','Nouveaux produits']]){
    const list=rows.filter(r=>r.demande===type);const sec=n('section',null,'com-group');sec.append(n('h2',titre+' ('+list.length+')'));
    if(!list.length)sec.append(n('p','Rien à traiter.','com-hint'));
    for(const row of list)sec.append(carte(row,ctx,{type,onDone:refresh}));zone.append(sec);}
