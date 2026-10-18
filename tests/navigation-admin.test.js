@@ -36,3 +36,18 @@ test('menu, page Rubriques et tableau de bord utilisent la même liste',()=>{
  assert.match(app,/function renderRubriques\(main\)\{main\.append\(n\('p',[^)]*\),cartesRubriques\(R,\{n,button,navigate\}\)/);
  assert.match(nav,/tete\.setAttribute\('aria-expanded',String\(ouvert\)\);tete\.setAttribute\('aria-controls',id\);/);assert.doesNotMatch(nav,/innerHTML/);
 });
+
+test('retour interne : filtres conservés, actualisation sans doublon, accueil de secours',async()=>{
+ const {createNavigationTrail}=await import('../src/navigation-admin.js');const trail=createNavigationTrail();
+ assert.deepEqual(trail.back(),{key:'dashboard',query:'',open:null});
+ trail.visit('dashboard');trail.visit('contents','école');trail.visit('contents','école');
+ trail.visit('settings');assert.equal(trail.canBack,true);
+ assert.deepEqual(trail.back(),{key:'contents',query:'école',open:null});
+ assert.equal(trail.back().key,'dashboard');assert.equal(trail.canBack,false);
+ trail.reset();assert.equal(trail.canBack,false);
+});
+test('retour depuis un détail : écran parent conservé',async()=>{
+ const {createNavigationTrail}=await import('../src/navigation-admin.js');const trail=createNavigationTrail();
+ trail.visit('lieux','Santé');trail.visit('lieux','Santé','fiche-1');
+ assert.deepEqual(trail.back(),{key:'lieux',query:'Santé',open:null});
+});

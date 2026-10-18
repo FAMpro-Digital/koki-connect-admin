@@ -50,3 +50,15 @@ export function cartesRubriques(R,h){
   c.append(puces);grille.append(c);}
  return grille;
 }
+
+// Historique interne : le retour reste dans l'administration et conserve les filtres.
+export function createNavigationTrail(){
+ let entries=[];
+ const same=(a,b)=>a?.key===b.key&&a?.query===b.query&&a?.open===b.open;
+ return {
+  visit(key,query='',open=null){const next={key,query,open};if(!same(entries.at(-1),next))entries.push(next);if(entries.length>60)entries.shift();},
+  back(){if(entries.length>1)entries.pop();return entries.at(-1)||{key:'dashboard',query:'',open:null};},
+  reset(){entries=[];},
+  get canBack(){return entries.length>1;}
+ };
+}

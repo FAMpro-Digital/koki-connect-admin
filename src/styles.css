@@ -103,3 +103,15 @@
 .dashboard-rubriques h2{margin-top:0}
 @media(max-width:760px){.workspace .sidebar .nav-bloc{display:none}.rubriques-cartes{grid-template-columns:1fr}}
 .evenement-en-cours{border-left:4px solid #f28c28;}
+
+/* Barre de retour inspirée de l'application publique. */
+.admin-page-bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;min-height:60px;padding:8px 12px;background:#0b5a3c;border-bottom:4px solid #f28c28;border-radius:16px;box-shadow:0 4px 16px #0b5a3c24;margin-bottom:18px}
+.admin-page-bar .admin-back{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 18px;border:0;border-radius:24px;background:#f28c28;color:#fff;font:inherit;font-weight:700;cursor:pointer;transition:transform .15s ease,background-color .15s ease}
+.admin-page-bar .admin-back:active{transform:scale(.96);background:#d9741a}
+.admin-page-bar .admin-back:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.admin-page-bar .admin-back:disabled{opacity:.5;cursor:default}
+.workspace main{min-width:0;animation:admin-page-enter .18s ease-out}
+@keyframes admin-page-enter{from{opacity:.65;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:760px){.admin-page-bar{border-radius:12px;top:env(safe-area-inset-top,0px)}}
+@media(prefers-reduced-motion:reduce){.workspace main{animation:none}.admin-page-bar .admin-back{transition:none}}
+@media print{.admin-page-bar{display:none}}
