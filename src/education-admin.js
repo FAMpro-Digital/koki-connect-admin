@@ -6,7 +6,7 @@ export async function renderEducation(main,ctx){
  const {n,button,field,formPanel,configured,db,result,guard,can,account,write,media,imageURL,imagePreview,error,refresh}=ctx;
  const editable=configured&&can(account?.role,'content');
  main.append(n('p','Établissements scolaires · Les fiches publiées sont partagées avec Koki Connect. Seules les coordonnées professionnelles publiques doivent être renseignées.'));
- async function edit(row){await guard();if(!can(account.role,'content'))throw Error('Permission refusée.');const old=C.decode(row)||{};main.replaceChildren(n('h1',row?'Modifier un établissement':'Ajouter un établissement'));const f=formPanel(),m={};
+ async function edit(row){await guard();if(!can(account.role,'content'))throw Error('Permission refusée.');const old=C.decode(row)||{};ctx.startEditor(row?'Modifier un établissement':'Ajouter un établissement');const f=formPanel(),m={};
  field(f,m,'titre','Nom de l’établissement','text',null,row?.titre||'',true);
  field(f,m,'resume','Présentation courte','textarea',null,row?.resume||'',true);
  field(f,m,'niveau','Niveau','text',C.levels,old.niveau||C.levels[0],true);

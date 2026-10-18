@@ -115,3 +115,6 @@
 @media(max-width:760px){.admin-page-bar{border-radius:12px;top:env(safe-area-inset-top,0px)}}
 @media(prefers-reduced-motion:reduce){.workspace main{animation:none}.admin-page-bar .admin-back{transition:none}}
 @media print{.admin-page-bar{display:none}}
+
+/* Respecter les champs conditionnels masqués par les formulaires. */
+.forms label[hidden],.business-panel label[hidden]{display:none}

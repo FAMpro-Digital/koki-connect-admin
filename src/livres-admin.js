@@ -40,7 +40,7 @@ export async function renderLivres(main,ctx){
 
  async function edit(row){
   await guard();if(!can(account.role,'content'))throw Error('Permission refusée.');
-  const old=L.decode(row)||{};main.replaceChildren(n('h1',row?'Modifier un livre':'Ajouter un livre'));const f=formPanel(),m={};
+  const old=L.decode(row)||{};ctx.startEditor(row?'Modifier un livre':'Ajouter un livre');const f=formPanel(),m={};
   field(f,m,'titre','Titre du livre','text',null,row?.titre||'',true);
   field(f,m,'resume','Présentation courte (visible dans la liste)','textarea',null,row?.resume||'',true);
   field(f,m,'categorie','Catégorie','text',L.categories,old.categorie||L.categories[0],true);
