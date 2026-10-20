@@ -16,6 +16,7 @@ export const migrationSources=Object.freeze([
  {name:'20261011000400_merchant_profiles.sql',file:'supabase/proposals/merchant-profiles.sql'},
  {name:'20261011000450_commerce_modernisation.sql',file:'supabase/proposals/commerce-modernisation.sql'},
  {name:'20261011000470_education_bibliotheque.sql',file:'supabase/proposals/education-bibliotheque.sql'},
+ {name:'20261011000480_feed_pagine_quotas.sql',file:'supabase/proposals/feed-pagine-quotas.sql'},
  {name:'20261011000500_marqueur_environnement_test.sql',file:null}
 ]);
 const marker=`-- Marque la base comme environnement de TEST (même marqueur que l'installation TEST).
