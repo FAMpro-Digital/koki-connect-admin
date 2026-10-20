@@ -49,7 +49,8 @@
       "develop/audit-corrections": false,
       "fix/invitations-parcours-boutique": false,
       "ci/verification-main": false,
-      "db/flux-pagine-quotas": false
+      "db/flux-pagine-quotas": false,
+      "tests/charge-isolee": false
     }
   }
 }

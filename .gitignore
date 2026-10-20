@@ -33,3 +33,4 @@ supabase/.env
 
 # Modèle de configuration locale sans secret (doit être versionné)
 !.env.supabase-local.example
+loadtests/resultats/
