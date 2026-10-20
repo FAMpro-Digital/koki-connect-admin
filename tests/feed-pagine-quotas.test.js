@@ -39,18 +39,18 @@ test('quotas : demandes d\'un client (60/heure, 300/jour) et créations d\'un pr
   const f=await fixtureBusiness(db);await db.query('reset role');
   await db.query('alter table public.koki_records disable trigger business_relations'); // les relations métier sont testées ailleurs ; seul le quota est visé ici
   const lien=`'${f.shop.id}','${f.merchant.id}'`;
-  const demande=`insert into public.koki_records(kind,statut,payload,client_id,parent_id,provider_id) values('commandes','Livrée','{"nom":"TEST"}',$1,${lien})`;
-  await db.query(`do $$ begin for i in 1..60 loop insert into public.koki_records(kind,statut,payload,client_id,parent_id,provider_id) values('commandes','Livrée','{"nom":"TEST"}','${testActors.client}',${lien});end loop;end $$`);
+  const demande=`insert into public.koki_records(kind,statut,payload,client_id,parent_id,provider_id) values('commandes','Livrée',jsonb_build_object('nom','TEST '||gen_random_uuid()),$1,${lien})`;
+  await db.query(`do $$ begin for i in 1..60 loop insert into public.koki_records(kind,statut,payload,client_id,parent_id,provider_id) values('commandes','Livrée',jsonb_build_object('nom','TEST client '||i),'${testActors.client}',${lien});end loop;end $$`);
   await assert.rejects(db.query(demande,[testActors.client]),/Trop de demandes/);
   await db.query(demande,[testActors.other]); // le quota est par compte
   // Quota quotidien : 300 demandes datant de plus d'une heure.
   await db.query('alter table public.koki_records disable trigger records_stamp'); // sinon created_at est forcé à maintenant : on ne peut pas antidater
-  await db.query(`do $$ begin for i in 1..300 loop insert into public.koki_records(kind,statut,payload,client_id,parent_id,provider_id,created_at) values('commandes','Livrée','{"nom":"TEST"}','${testActors.provider}',${lien},now()-interval '2 hours');end loop;end $$`);
+  await db.query(`do $$ begin for i in 1..300 loop insert into public.koki_records(kind,statut,payload,client_id,parent_id,provider_id,created_at) values('commandes','Livrée',jsonb_build_object('nom','TEST lot '||i),'${testActors.provider}',${lien},now()-interval '2 hours');end loop;end $$`);
   await db.query('alter table public.koki_records enable trigger records_stamp');
   await assert.rejects(db.query(demande,[testActors.provider]),/Limite quotidienne de demandes/);
   // Créations d'un professionnel : on complète jusqu'à 500 fiches dans la journée, la suivante est refusée.
-  await db.query(`do $$ declare n integer;begin select count(*) into n from public.koki_records where owner_id='${testActors.merchant}';for i in n+1..500 loop insert into public.koki_records(kind,statut,payload,owner_id,parent_id) values('produits','Disponible','{"nom":"TEST"}','${testActors.merchant}','${f.shop.id}');end loop;end $$`);
-  await assert.rejects(db.query(`insert into public.koki_records(kind,statut,payload,owner_id,parent_id) values('produits','Disponible','{"nom":"TEST"}',$1,$2)`,[testActors.merchant,f.shop.id]),/Limite quotidienne de créations/);
+  await db.query(`do $$ declare n integer;begin select count(*) into n from public.koki_records where owner_id='${testActors.merchant}';for i in n+1..500 loop insert into public.koki_records(kind,statut,payload,owner_id,parent_id) values('produits','Disponible',jsonb_build_object('nom','TEST produit '||i),'${testActors.merchant}','${f.shop.id}');end loop;end $$`);
+  await assert.rejects(db.query(`insert into public.koki_records(kind,statut,payload,owner_id,parent_id) values('produits','Disponible',jsonb_build_object('nom','TEST dernier '||gen_random_uuid()),$1,$2)`,[testActors.merchant,f.shop.id]),/Limite quotidienne de créations/);
  }finally{await pg.close();}
 });
 test('la proposition est additive : aucune suppression de table, de colonne ni de données',async()=>{
