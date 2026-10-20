@@ -44,7 +44,9 @@ test('quotas : demandes d\'un client (60/heure, 300/jour) et créations d\'un pr
   await assert.rejects(db.query(demande,[testActors.client]),/Trop de demandes/);
   await db.query(demande,[testActors.other]); // le quota est par compte
   // Quota quotidien : 300 demandes datant de plus d'une heure.
+  await db.query('alter table public.koki_records disable trigger records_stamp'); // sinon created_at est forcé à maintenant : on ne peut pas antidater
   await db.query(`do $$ begin for i in 1..300 loop insert into public.koki_records(kind,statut,payload,client_id,parent_id,provider_id,created_at) values('commandes','Livrée','{"nom":"TEST"}','${testActors.provider}',${lien},now()-interval '2 hours');end loop;end $$`);
+  await db.query('alter table public.koki_records enable trigger records_stamp');
   await assert.rejects(db.query(demande,[testActors.provider]),/Limite quotidienne de demandes/);
   // Créations d'un professionnel : on complète jusqu'à 500 fiches dans la journée, la suivante est refusée.
   await db.query(`do $$ declare n integer;begin select count(*) into n from public.koki_records where owner_id='${testActors.merchant}';for i in n+1..500 loop insert into public.koki_records(kind,statut,payload,owner_id,parent_id) values('produits','Disponible','{"nom":"TEST"}','${testActors.merchant}','${f.shop.id}');end loop;end $$`);
