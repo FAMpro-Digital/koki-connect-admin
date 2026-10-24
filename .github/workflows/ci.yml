@@ -1,0 +1,61 @@
+name: CI
+
+# Vérifications obligatoires avant toute fusion dans main.
+# Le workflow « Development tests and build » reste en place pour la branche develop/phases-2-6.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  # Une nouvelle poussée sur une PR annule l'ancienne vérification ; un push sur main n'est jamais annulé.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    # Nom du contrôle à exiger dans la règle de protection de main : « verify ».
+    name: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      VITE_BUSINESS_RPC_ENABLED: 'false'
+      VITE_SUPABASE_URL: ''
+      VITE_SUPABASE_PUBLISHABLE_KEY: ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify deployment configuration guards
+        run: |
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const vercel = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
+          const headers = Object.fromEntries((vercel.headers?.[0]?.headers ?? []).map(h => [h.key, h.value]));
+          const csp = headers['Content-Security-Policy'] ?? '';
+          assert.ok(csp, 'vercel.json doit garder la politique CSP');
+          assert.ok(!/unsafe-inline|unsafe-eval/.test(csp.match(/script-src[^;]*/)?.[0] ?? ''), 'script-src ne doit pas autoriser unsafe-inline ni unsafe-eval');
+          assert.equal(vercel.git.deploymentEnabled['develop/phases-2-6'], false);
+          JS
+      - name: Verify local migrations are up to date
+        run: npm run supabase:migrations:check
+      - name: Test and build with loopback-only networking
+        run: |
+          sudo unshare --net bash -euc '
+            ip link set lo up
+            exec runuser -u "$1" -- bash -euc "npm test && npm run build"
+          ' -- "$(id -un)"
