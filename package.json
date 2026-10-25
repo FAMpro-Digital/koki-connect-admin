@@ -14,7 +14,8 @@
     "supabase:migrations:check": "node scripts/build-local-migrations.mjs --check"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.117.3"
+    "@supabase/supabase-js": "2.117.3",
+    "web-push": "3.6.7"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",

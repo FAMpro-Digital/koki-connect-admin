@@ -47,7 +47,8 @@
       "develop/services-publics": false,
       "develop/rubriques-uniques": false,
       "develop/audit-corrections": false,
-      "fix/invitations-parcours-boutique": false
+      "fix/invitations-parcours-boutique": false,
+      "feature/notifications-sms-push": false
     }
   }
 }
