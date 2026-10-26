@@ -58,7 +58,7 @@ function decisionForm(host,row,ctx,{changes=false,onDone}){
    }catch(e){msg.textContent=e.message;for(const x of actions.querySelectorAll('button'))x.disabled=false;}
   },cls);actions.append(b);return b;};
  if(changes){decide('approve_changes','Approuver les modifications','primary');decide('reject_changes','Refuser les modifications','danger');}
- else for(const d of C.decisionsPossibles(row.kind,row.statut)){const b=decide(d,({approve:'Approuver',reject:'Refuser',suspend:'Suspendre',archive:'Archiver'})[d]+' '+SINGULIER[row.kind],d==='approve'?'primary':d==='reject'?'danger':'secondary');
+ else for(const d of C.decisionsPossibles(row.kind,row.statut)){const b=decide(d,({approve:row.statut==='Archivé'?'Désarchiver':'Approuver',reject:'Refuser',suspend:'Suspendre',archive:'Archiver'})[d]+' '+SINGULIER[row.kind],d==='approve'?'primary':d==='reject'?'danger':'secondary');
   if(d==='approve'&&row.kind!=='professionnels'&&row.parent&&row.parent.statut!=='Actif'){b.disabled=true;b.title='La fiche parente doit d’abord être approuvée.';box.insertBefore(n('p','Approbation impossible : '+(row.parent.kind==='boutiques'?'la boutique':'la fiche professionnelle')+' « '+row.parent.nom+' » n’est pas approuvée.','com-hint com-warn'),actions);}}
  host.append(box);
 }

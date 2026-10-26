@@ -28,6 +28,7 @@
   ],
   "git": {
     "deploymentEnabled": {
+      "develop/desarchiver": false,
       "develop/phases-2-6": false,
       "develop/education-bibliotheque": false,
       "develop/production-phases-2-6": false,
