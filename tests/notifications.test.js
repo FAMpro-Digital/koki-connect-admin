@@ -5,7 +5,7 @@ test('Notifications : destinataires métier, isolation, lecture seule et file pr
  const pg=new PGlite();const db={query:(q,v)=>v?pg.query(q,v):pg.exec(q).then(x=>x.at(-1))};
  try{
   await setupBusinessDB(db);await db.query("create role service_role bypassrls;alter table auth.users add phone text,add phone_confirmed_at timestamptz;");
-  const f=await fixtureBusiness(db);await db.query('reset role');await db.query(source);
+  const f=await fixtureBusiness(db);await db.query('reset role');await db.query(source);await db.query(await readFile(new URL('../supabase/proposals/audit-notification-health.sql',import.meta.url),'utf8'));
   await actor(db,testActors.client);
   const order=await rpc(db,'create_order',{request_id:crypto.randomUUID(),shop_id:f.shop.id,items:[{product_id:f.product.id,quantity:1}],mode:'retrait',address:''});
   let rows=(await db.query('select * from koki_notifications')).rows;assert.equal(rows.length,1);assert.equal(rows[0].record_id,order.id);
@@ -32,5 +32,9 @@ test('Notifications : destinataires métier, isolation, lecture seule et file pr
   for(let i=0;i<8;i++)await db.query("insert into koki_notifications(recipient_id,record_id,revision,title,body,category) values($1,$2,$3,'Test','Test','commandes')",[testActors.client,order.id,100+i]);
   const sms=(await db.query('select * from koki_notification_claim(false,true)')).rows;assert.equal(sms.length,5);
   assert.equal((await db.query('select * from koki_notification_claim(false,true)')).rows.length,0);
+  await db.query("update koki_notification_deliveries set processing_started_at=now()-interval '11 minutes' where state='processing'");
+  assert.equal((await db.query('select * from koki_notification_claim(true,true)')).rows.length,0);
+  assert.equal((await db.query("select count(*)::int n from koki_notification_deliveries where state='failed' and failure_code='delivery_unknown'")).rows[0].n,6);
+  await actor(db,testActors.other);await assert.rejects(db.query('select koki_notification_health()'),/Accès refusé/);
  }finally{await pg.close();}
 });

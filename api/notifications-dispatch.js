@@ -18,7 +18,8 @@ export function dispatchHandler({env=process.env,client=createClient,sendPush=we
   const result=await db.rpc('koki_notification_claim',{p_push:push,p_sms:sms});
   if(result.error)return res.status(503).json({error:'File indisponible'});
   let sent=0,failed=0,skipped=0;
-  for(const job of result.data||[]){
+  const jobs=result.data||[];let cursor=0;
+  const outcomes=await Promise.all(Array.from({length:Math.min(5,jobs.length)},async()=>{while(cursor<jobs.length){const job=jobs[cursor++];
    let state='skipped',providerId=null;
    try{
     const {data:n,error:nError}=await db.from('koki_notifications').select('recipient_id,category').eq('id',job.notification_id).single();
@@ -49,10 +50,12 @@ export function dispatchHandler({env=process.env,client=createClient,sendPush=we
      }
     }
    }catch{state='failed';}
-   const saved=await db.from('koki_notification_deliveries').update({state,provider_id:providerId,completed_at:new Date().toISOString()}).eq('id',job.id).eq('state','processing');
-   if(saved.error)return res.status(503).json({error:'Résultat à vérifier dans la file, ne pas renvoyer automatiquement'});
+   const saved=await db.from('koki_notification_deliveries').update({state,failure_code:state==='failed'?'delivery_failed_or_unknown':null,provider_id:providerId,completed_at:new Date().toISOString()}).eq('id',job.id).eq('state','processing');
+   if(saved.error)return false;
    if(state==='sent')sent++;else if(state==='failed')failed++;else skipped++;
   }
+  return true;}));
+  if(outcomes.includes(false))return res.status(503).json({error:'Résultat à vérifier dans la file, ne pas renvoyer automatiquement'});
   return res.status(200).json({sent,failed,skipped});
  };
 }
