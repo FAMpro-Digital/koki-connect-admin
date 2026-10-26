@@ -22,7 +22,8 @@ Les propositions SQL sont versionnées pour revue, elles ne doivent pas être r�
 1. `publication-interactions.sql` : prérequis déjà déployé avant cet audit.
 2. Migration `general_audit_corrections` : `publication-moderation.sql`, `audit-driver-availability.sql`, `audit-notification-health.sql`, `audit-indexes-tracking.sql`, dans cet ordre.
 3. Migration `publication_feed_pages` : `publication-feed-pages.sql`.
-4. Déployer les deux interfaces après validation CI.
+4. Migration `notification_policy_initplan` : `audit-notification-policy.sql` (claims évalués une fois par requête).
+5. Déployer les deux interfaces après validation CI.
 
 ## Points nécessitant encore une configuration ou validation externe
 

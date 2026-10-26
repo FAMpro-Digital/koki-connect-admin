@@ -5,7 +5,7 @@ test('Notifications : destinataires métier, isolation, lecture seule et file pr
  const pg=new PGlite();const db={query:(q,v)=>v?pg.query(q,v):pg.exec(q).then(x=>x.at(-1))};
  try{
   await setupBusinessDB(db);await db.query("create role service_role bypassrls;alter table auth.users add phone text,add phone_confirmed_at timestamptz;");
-  const f=await fixtureBusiness(db);await db.query('reset role');await db.query(source);await db.query(await readFile(new URL('../supabase/proposals/audit-notification-health.sql',import.meta.url),'utf8'));
+  const f=await fixtureBusiness(db);await db.query('reset role');await db.query(source);await db.query(await readFile(new URL('../supabase/proposals/audit-notification-health.sql',import.meta.url),'utf8'));await db.query(await readFile(new URL('../supabase/proposals/audit-notification-policy.sql',import.meta.url),'utf8'));
   await actor(db,testActors.client);
   const order=await rpc(db,'create_order',{request_id:crypto.randomUUID(),shop_id:f.shop.id,items:[{product_id:f.product.id,quantity:1}],mode:'retrait',address:''});
   let rows=(await db.query('select * from koki_notifications')).rows;assert.equal(rows.length,1);assert.equal(rows[0].record_id,order.id);
