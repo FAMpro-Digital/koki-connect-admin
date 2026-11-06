@@ -52,6 +52,8 @@ export async function renderLivres(main,ctx){
   field(f,m,'fournisseur','Fourni par (librairie, centre, auteur…)','text',null,old.fournisseur||'');
   field(f,m,'whatsapp','WhatsApp pour commander','tel',null,old.whatsapp||'');
   field(f,m,'description','Description complète','textarea',null,old.description||'');
+  field(f,m,'autorisation_diffusion','Autorisation écrite de diffusion vérifiée','checkbox',null,old.autorisation_diffusion===true);
+  field(f,m,'reference_autorisation','Référence de l’autorisation (document, date ou contrat)','text',null,old.reference_autorisation||'');
   const fichier=field(f,m,'fichier','Fichier du livre gratuit : PDF, EPUB, MP3 ou M4A (50 Mo maximum)','file');fichier.accept='.pdf,.epub,.mp3,.m4a,application/pdf,application/epub+zip,audio/mpeg,audio/mp4';
   const infoFichier=n('p',old.fichier?'Fichier actuel : '+old.taille_mo+' Mo':'Aucun fichier enregistré.');f.append(infoFichier);
   let retirer=null;if(old.fichier){const l=n('label','Retirer le fichier actuel');retirer=n('input');retirer.type='checkbox';l.prepend(retirer);f.append(l,button('Ouvrir le fichier actuel',()=>ouvrirFichier(guard,bookURL,old.fichier)));}
@@ -66,13 +68,13 @@ export async function renderLivres(main,ctx){
   const preview=n('section');f.append(preview);const previewFile=imagePreview(preview,row?.image_path,imageURL);
   const submit=n('button','Enregistrer le livre');submit.type='submit';submit.className='primary';const selected=bindImageProcessing(m.photo,preview,previewFile,submit);f.append(submit,button('Annuler',refresh));
   f.onsubmit=async e=>{e.preventDefault();submit.disabled=true;let envoye=null;try{
-   await guard();const v=Object.fromEntries(['titre','resume','categorie','niveau','format','acces','prix','auteur','fournisseur','whatsapp','description','source','statut','publication'].map(k=>[k,m[k].value.trim()]));
+   await guard();const v=Object.fromEntries(['titre','resume','categorie','niveau','format','acces','prix','auteur','fournisseur','whatsapp','description','autorisation_diffusion','reference_autorisation','source','statut','publication'].map(k=>[k,m[k].value.trim()]));
    if(!v.titre||!v.resume)throw Error('Titre et présentation requis.');
    const gratuitNumerique=v.acces==='Gratuit'&&v.format!=='Livre papier';
    let chemin=gratuitNumerique&&!(retirer&&retirer.checked)?old.fichier||'':'',taille=chemin?old.taille_mo:0,format=v.format;
    const nouveau=gratuitNumerique?fichier.files[0]:null;
    if(nouveau){envoye=await bookUpload(nouveau);chemin=envoye.path;taille=envoye.taille_mo;format=formatContrat(envoye.type,v.format);}
-   const texte=L.encode({categorie:v.categorie,niveau:v.niveau,format,acces:v.acces,prix:v.acces==='Payant'?Number(v.prix):0,auteur:v.auteur,fournisseur:v.fournisseur,whatsapp:v.whatsapp,description:v.description,fichier:chemin,taille_mo:taille,archive:false});
+   const texte=L.encode({categorie:v.categorie,niveau:v.niveau,format,acces:v.acces,prix:v.acces==='Payant'?Number(v.prix):0,auteur:v.auteur,fournisseur:v.fournisseur,whatsapp:v.whatsapp,description:v.description,fichier:chemin,taille_mo:taille,archive:false,autorisation_diffusion:v.autorisation_diffusion==='true',reference_autorisation:v.reference_autorisation});
    const data={type:'Informations utiles',categorie:'Éducation',titre:v.titre,resume:v.resume,lieu:row?.lieu||'',source:v.source,statut:v.statut,publication:new Date(v.publication+'Z').toISOString(),texte,image_path:row?.image_path||null};
    await saveImageRecord({data,file:selected(),content:true,upload:media,persist:value=>write('koki_contents',value,row),cleanup:path=>result(db.storage.from('koki-media').remove([path]))});
    envoye=null;
