@@ -4,6 +4,7 @@
 export const PRECISION_FAIBLE=100; // mètres : au-delà, on invite à réessayer à l'extérieur
 
 const arrondi=x=>Math.round(x*1e6)/1e6;
+let instancePosition=0;
 
 export function coordonneesValides(latitude,longitude){
  return Number.isFinite(latitude)&&Number.isFinite(longitude)&&latitude>=-90&&latitude<=90&&longitude>=-180&&longitude<=180;
@@ -43,12 +44,13 @@ export function lienCarte(latitude,longitude){
 // Bloc « Position GPS » d'un formulaire. map.latitude / map.longitude reçoivent des champs
 // numériques cachés : le code d'enregistrement existant les lit sans changement (vide → null).
 export function positionField(form,map,valeurs={},{geo,onError}={}){
+ const idPrefix='position-'+(++instancePosition)+'-';
  const el=(t,txt)=>{const e=document.createElement(t);if(txt!==undefined)e.textContent=txt;return e;};
  const bloc=el('div');bloc.className='wide position-gps';
  const titre=el('strong','Position GPS');
  const etat=el('p');etat.className='position-etat';etat.setAttribute('role','status');etat.setAttribute('aria-live','polite');
  const champs={};
- for(const k of ['latitude','longitude']){const i=el('input');i.type='number';i.step='any';i.name=k;i.id='field-'+k;i.hidden=true;i.tabIndex=-1;i.setAttribute('aria-hidden','true');const x=Number(valeurs[k]);i.value=valeurs[k]===''||valeurs[k]==null||!Number.isFinite(x)?'':String(x);champs[k]=i;map[k]=i;}
+ for(const k of ['latitude','longitude']){const i=el('input');i.type='number';i.step='any';i.name=k;i.id=idPrefix+k;i.hidden=true;i.tabIndex=-1;i.setAttribute('aria-hidden','true');const x=Number(valeurs[k]);i.value=valeurs[k]===''||valeurs[k]==null||!Number.isFinite(x)?'':String(x);champs[k]=i;map[k]=i;}
  const capter=el('button','📍 Utiliser ma position actuelle (GPS)');capter.type='button';capter.className='primary';
  const effacer=el('button','Effacer la position');effacer.type='button';
  const carte=el('a','Voir sur la carte');carte.target='_blank';carte.rel='noopener';

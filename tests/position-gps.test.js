@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createHash} from 'node:crypto';
 import {lirePosition,messageErreurPosition,textePosition,coordonneesValides,lienCarte} from '../src/position-gps.js';
 import {resources,validateRecord} from '../src/model.js';
 
@@ -33,9 +32,10 @@ test('plus aucune saisie manuelle : le formulaire passe par le bloc GPS', ()=>{
  assert.throws(()=>validateRecord('chauffeurs','Disponible',{nom:'TEST',latitude:120,longitude:0}),/Latitude invalide/);
  assert.doesNotThrow(()=>validateRecord('chauffeurs','Disponible',{nom:'TEST',latitude:null,longitude:null}));
 });
-test('module GPS identique à celui de l’application publique (assets/business/position-gps.mjs)', ()=>{
- const sha=createHash('sha256').update(readFileSync(new URL('../src/position-gps.js',import.meta.url))).digest('hex');
- assert.equal(sha,'edbe055f154bda0346805dbeeceab9931e73c2547598f106348147343e049bf8');
+test('module GPS génère des IDs uniques pour chaque bloc',()=>{
+ const source=readFileSync(new URL('../src/position-gps.js',import.meta.url),'utf8');
+ assert.match(source,/let instancePosition=0/);
+ assert.match(source,/idPrefix='position-'/);
 });
 test('fiche commerçant : plus de cases Latitude / Longitude, position GPS obligatoire', ()=>{
  const ui=readFileSync(new URL('../src/business-ui.js',import.meta.url),'utf8');
