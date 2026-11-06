@@ -10,6 +10,7 @@ const fichierRe=/^[a-f0-9-]+\/[a-f0-9-]+\.(pdf|epub|mp3|m4a)$/;
 const telRe=/^\+?[0-9 ()-]{6,24}$/;
 const tailleMax=50; // Mo : limite d'envoi Supabase Free et taille raisonnable sur téléphone
 const diffusionInterditeSansAutorisation=/^l['’]autoroute du millionnaire$/i;
+const diffusionInterditeSansAutorisation=/^l['’]autoroute du millionnaire$/i;
 function str(v,max){return typeof v==='string'&&v.length<=max;}
 function check(v){
  if(!v||v.schema!==marker||v.version!==version)return false;
@@ -23,12 +24,12 @@ function check(v){
  if(v.fichier&&(!fichierRe.test(v.fichier)||v.format==='Livre papier'))return false;
  return true;
 }
-function decode(row){if(row?.type!=='Informations utiles'||row.categorie!=='Éducation'||diffusionInterditeSansAutorisation.test(String(row.titre||'').trim()))return null;try{const v=JSON.parse(row.texte);return check(v)?v:null;}catch{return null;}}
+function decode(row){if(row?.type!=='Informations utiles'||row.categorie!=='Éducation'||diffusionInterditeSansAutorisation.test(String(row.titre||'').trim()))return null;try{const v=JSON.parse(row.texte);return check(v)?{...v,autorisation_diffusion:v.autorisation_diffusion===true,reference_autorisation:String(v.reference_autorisation||'')}:null;}catch{return null;}}
 function encode(v){
  const s={schema:marker,version,categorie:v.categorie,niveau:String(v.niveau||'').trim(),format:v.format,acces:v.acces,
   prix:v.acces==='Gratuit'?0:Number(v.prix),auteur:String(v.auteur||'').trim(),fournisseur:String(v.fournisseur||'').trim(),
   whatsapp:String(v.whatsapp||'').trim(),description:String(v.description||'').trim(),
-  fichier:v.acces==='Gratuit'?String(v.fichier||'').trim():'',taille_mo:Number(v.taille_mo)||0,archive:v.archive===true};
+  fichier:v.acces==='Gratuit'?String(v.fichier||'').trim():'',taille_mo:Number(v.taille_mo)||0,archive:v.archive===true,autorisation_diffusion:v.autorisation_diffusion===true,reference_autorisation:String(v.reference_autorisation||'').trim()};
  if(!check(s)){
   if(s.acces==='Payant'&&!(Number.isInteger(s.prix)&&s.prix>0))throw Error('Indiquez un prix en FCFA pour un livre payant.');
   if(s.whatsapp&&!telRe.test(s.whatsapp))throw Error('Numéro WhatsApp invalide.');
