@@ -9,7 +9,6 @@ const acces=['Gratuit','Payant'];
 const fichierRe=/^[a-f0-9-]+\/[a-f0-9-]+\.(pdf|epub|mp3|m4a)$/;
 const telRe=/^\+?[0-9 ()-]{6,24}$/;
 const tailleMax=50; // Mo : limite d'envoi Supabase Free et taille raisonnable sur téléphone
-const diffusionInterditeSansAutorisation=/^l['’]autoroute du millionnaire$/i;
 function str(v,max){return typeof v==='string'&&v.length<=max;}
 function check(v){
  if(!v||v.schema!==marker||v.version!==version)return false;
@@ -23,7 +22,7 @@ function check(v){
  if(v.fichier&&(!fichierRe.test(v.fichier)||v.format==='Livre papier'))return false;
  return true;
 }
-function decode(row){if(row?.type!=='Informations utiles'||row.categorie!=='Éducation'||diffusionInterditeSansAutorisation.test(String(row.titre||'').trim()))return null;try{const v=JSON.parse(row.texte);return check(v)?v:null;}catch{return null;}}
+function decode(row){if(row?.type!=='Informations utiles'||row.categorie!=='Éducation')return null;try{const v=JSON.parse(row.texte);return check(v)?v:null;}catch{return null;}}
 function encode(v){
  const s={schema:marker,version,categorie:v.categorie,niveau:String(v.niveau||'').trim(),format:v.format,acces:v.acces,
   prix:v.acces==='Gratuit'?0:Number(v.prix),auteur:String(v.auteur||'').trim(),fournisseur:String(v.fournisseur||'').trim(),
@@ -44,6 +43,6 @@ function filtrer(items,{acces:a='Tous',categorie:c='Toutes',q=''}={},norm=x=>Str
 }
 function prix(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' FCFA';}
 function telechargeable(livre){return livre.acces==='Gratuit'&&!!livre.fichier&&livre.format!=='Livre papier';}
-const api=Object.freeze({marker,version,categories,formats,acces,tailleMax,decode,encode,filtrer,prix,telechargeable,diffusionInterditeSansAutorisation});
+const api=Object.freeze({marker,version,categories,formats,acces,tailleMax,decode,encode,filtrer,prix,telechargeable});
 root.KokiLivreContract=api;if(typeof module!=='undefined')module.exports=api;
 })(globalThis);
