@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createHash} from 'node:crypto';
 import {lirePosition,messageErreurPosition,textePosition,coordonneesValides,lienCarte} from '../src/position-gps.js';
 import {resources,validateRecord} from '../src/model.js';
 
@@ -34,7 +33,7 @@ test('plus aucune saisie manuelle : le formulaire passe par le bloc GPS', ()=>{
  assert.doesNotThrow(()=>validateRecord('chauffeurs','Disponible',{nom:'TEST',latitude:null,longitude:null}));
 });
 test('module GPS génère des IDs uniques pour chaque bloc',()=>{
- const source=readFileSync(path.join(root,'src/position-gps.js'),'utf8');
+ const source=readFileSync(new URL('../src/position-gps.js',import.meta.url),'utf8');
  assert.match(source,/let instancePosition=0/);
  assert.match(source,/idPrefix='position-'/);
 });
