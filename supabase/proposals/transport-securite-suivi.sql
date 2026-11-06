@@ -205,7 +205,7 @@ grant execute on function koki_private.transport_plus(text,jsonb) to anon,authen
 
 create or replace function public.koki_business(command text,input jsonb default '{}'::jsonb) returns jsonb
 language sql security invoker set search_path='' as $$
- select case when command in ('nearby_drivers','reserve_ride','ride_code','start_ride','ride_tracking','rate_ride','report_ride','driver_stats','admin_ride_reports')
+ select case when command in ('nearby_drivers','reserve_ride','ride_code','start_ride','driver_position','ride_tracking','rate_ride','report_ride','driver_stats','admin_ride_reports')
   then koki_private.transport_plus(command,input) else koki_private.commerce_admin(command,input) end $$;
 commit;
 -- Retour arrière (dans cet ordre) :
