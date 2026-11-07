@@ -12,7 +12,7 @@ export async function renderVideos(main,{n,button,db,result,guard,account,can,me
   source.append(new Option('Téléchargement MP4/WebM','upload'),new Option('Lien YouTube','youtube'));
   const url=document.createElement('input');url.type='url';url.placeholder='https://www.youtube.com/watch?v=…';
   const file=document.createElement('input');file.type='file';file.accept='video/mp4,video/webm';
-  const add=(label,element)=>{const wrapper=document.createElement('label');wrapper.append(n(label),element);form.append(wrapper);};
+  const add=(label,element)=>{const wrapper=document.createElement('label');wrapper.append(n('span',label),element);form.append(wrapper);};
   add('Publication',content);add('Source',source);add('Lien YouTube',url);add('Fichier vidéo',file);
   const submit=button('Ajouter la vidéo');submit.type='submit';submit.className='primary';submit.disabled=!editable;form.append(submit);
   const toggle=()=>{url.hidden=source.value!=='youtube';file.hidden=source.value!=='upload';};
