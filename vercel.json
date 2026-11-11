@@ -62,7 +62,8 @@
       "develop/audit-corrections": false,
       "fix/invitations-parcours-boutique": false,
       "feature/notifications-sms-push": false,
-      "feature/livre-autorise-lecteur-pdf": false
+      "feature/livre-autorise-lecteur-pdf": false,
+      "fix/publication-photo-admin": false
     }
   }
 }
