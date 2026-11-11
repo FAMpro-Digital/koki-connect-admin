@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import fs f
 const C=globalThis.KokiCommerceContract,FICHIER=new URL('../src/commerce-contract.js',import.meta.url);
 // Empreinte du contrat : identique dans les deux dépôts. Après toute modification, copier le fichier
 // dans l'autre dépôt et mettre à jour cette empreinte des deux côtés.
-const EMPREINTE='e79c261cb12e481eadf88424468e521ad842a77aa787f86fa7a42e8653886156';
+const EMPREINTE='671b65563e283f442943163c354474e483ef99a1abe31bb12408f235318a2850';
 test('contrat Commerces & Services : identique dans les deux dépôts',()=>{assert.equal(createHash('sha256').update(fs.readFileSync(FICHIER)).digest('hex'),EMPREINTE);});
 test('numéros sénégalais normalisés, liens appel et WhatsApp',()=>{
  for(const [entree,attendu] of [['77 123 45 67','+221771234567'],['771234567','+221771234567'],['+221 77-123-45-67','+221771234567'],['00221771234567','+221771234567'],['221 33 961 23 45','+221339612345'],['(76) 123.45.67','+221761234567'],['+33 6 12 34 56 78','+33612345678'],['+221 12 345 67 89',null],['17',null],['12345',null],['',null],[null,null],['abc',null]])assert.equal(C.normaliserTelephone(entree),attendu,String(entree));

@@ -93,7 +93,7 @@ function verifierOffre(kind,v){
  if(kind==='produits'){
   if(!entier(v.prix,1e9))e.push('Prix en FCFA obligatoire (nombre entier).');
   if(v.ancien_prix!==null&&v.ancien_prix!==undefined&&(!entier(v.ancien_prix,1e9)||!(v.ancien_prix>v.prix)))e.push('L’ancien prix doit être supérieur au prix actuel.');
-  if(!entier(v.stock,1e6))e.push('Stock invalide (nombre entier).');
+  if(v.stock!==null&&v.stock!==undefined&&!entier(v.stock,1e6))e.push('Stock invalide (nombre entier).');
  }
  if(kind==='services'){
   if(!tarifs.includes(v.tarif))e.push('Choisissez un tarif fixe ou sur devis.');
