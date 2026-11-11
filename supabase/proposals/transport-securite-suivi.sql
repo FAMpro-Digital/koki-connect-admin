@@ -75,7 +75,7 @@ declare actor uuid:=auth.uid();r public.koki_records;d public.koki_records;c kok
  tags text[];n integer;v public.koki_records;
 begin
  if input is null or jsonb_typeof(input)<>'object' or octet_length(input::text)>16384 then raise exception 'Requête invalide ou trop volumineuse';end if;
- if command not in ('nearby_drivers','reserve_ride','ride_code','start_ride','ride_tracking','rate_ride','report_ride','driver_stats','admin_ride_reports') then raise exception 'Commande inconnue';end if;
+ if command not in ('nearby_drivers','reserve_ride','ride_code','start_ride','driver_position','ride_tracking','rate_ride','report_ride','driver_stats','admin_ride_reports') then raise exception 'Commande inconnue';end if;
  -- Chauffeurs proches : réponse habituelle complétée par la note moyenne (au moins une note).
  if command='nearby_drivers' then
   res:=koki_private.commerce_admin(command,input);
@@ -135,13 +135,41 @@ begin
   perform set_config('koki.depart_valide','',true);
   return res;
  end if;
+ -- Écriture de position : seul le chauffeur affecté peut publier, pendant une course active.
+ if command='driver_position' then
+  perform koki_private.business_keys_allowed(input,array['id','latitude','longitude','accuracy','position_id']);
+  if r.driver_id is null or not exists(select 1 from public.koki_records d where d.id=r.driver_id and d.owner_id=actor and d.kind='chauffeurs') then
+   raise exception 'Position réservée au chauffeur affecté' using errcode='42501';
+  end if;
+  if r.statut not in ('Acceptée','Chauffeur en route','Course en cours') then
+   raise exception 'Publication de position indisponible pour cette course';
+  end if;
+  if jsonb_typeof(input->'latitude')<>'number' or jsonb_typeof(input->'longitude')<>'number'
+     or (input->>'latitude')::numeric not between -90 and 90
+     or (input->>'longitude')::numeric not between -180 and 180 then
+   raise exception 'Coordonnées GPS invalides';
+  end if;
+  if input ? 'accuracy' and (jsonb_typeof(input->'accuracy')<>'number' or (input->>'accuracy')::numeric not between 0 and 100000) then
+   raise exception 'Précision GPS invalide';
+  end if;
+  update public.koki_records d set
+   payload=jsonb_set(jsonb_set(d.payload,'{position}',jsonb_build_object(
+    'latitude',round((input->>'latitude')::numeric,6),
+    'longitude',round((input->>'longitude')::numeric,6),
+    'accuracy',case when input ? 'accuracy' then round((input->>'accuracy')::numeric,1) else null end
+   ),true),'{position_updated_at}',to_jsonb(now()),true),
+   updated_at=now()
+   where d.id=r.driver_id and d.owner_id=actor and d.kind='chauffeurs';
+  if not found then raise exception 'Chauffeur affecté introuvable' using errcode='42501';end if;
+  return jsonb_build_object('ok',true,'position_updated_at',now());
+ end if;
  -- Suivi en direct : dernière position partagée par le chauffeur, pour le client d'une course acceptée.
  if command='ride_tracking' then
   perform koki_private.business_keys_allowed(input,array['id']);
   if r.client_id is distinct from actor then raise exception 'Suivi réservé au client de la course' using errcode='42501';end if;
   if r.statut not in ('Acceptée','Chauffeur en route','Course en cours') then return jsonb_build_object('statut',r.statut,'position',null);end if;
   select * into d from public.koki_records where id=r.driver_id;
-  return jsonb_build_object('statut',r.statut,'position',case when koki_private.business_point(d.payload->'position') then d.payload->'position' end,'position_updated_at',d.payload->>'position_updated_at');
+  return jsonb_build_object('statut',r.statut,'position',case when koki_private.business_point(d.payload->'position') and coalesce((d.payload->>'position_updated_at')::timestamptz,'epoch')>=now()-interval '2 minutes' then d.payload->'position' end,'position_updated_at',case when coalesce((d.payload->>'position_updated_at')::timestamptz,'epoch')>=now()-interval '2 minutes' then d.payload->>'position_updated_at' end);
  end if;
  -- Note : une seule fois, par le client, après une course terminée.
  if command='rate_ride' then
@@ -177,7 +205,7 @@ grant execute on function koki_private.transport_plus(text,jsonb) to anon,authen
 
 create or replace function public.koki_business(command text,input jsonb default '{}'::jsonb) returns jsonb
 language sql security invoker set search_path='' as $$
- select case when command in ('nearby_drivers','reserve_ride','ride_code','start_ride','ride_tracking','rate_ride','report_ride','driver_stats','admin_ride_reports')
+ select case when command in ('nearby_drivers','reserve_ride','ride_code','start_ride','driver_position','ride_tracking','rate_ride','report_ride','driver_stats','admin_ride_reports')
   then koki_private.transport_plus(command,input) else koki_private.commerce_admin(command,input) end $$;
 commit;
 -- Retour arrière (dans cet ordre) :
