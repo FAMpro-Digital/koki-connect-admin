@@ -91,7 +91,7 @@ function verifierOffre(kind,v){
  if(nom.length<1||nom.length>180)e.push('Nom obligatoire (180 caractères maximum).');
  const entier=(x,max)=>typeof x==='number'&&Number.isInteger(x)&&x>=0&&x<=max;
  if(kind==='produits'){
-  if(!entier(v.prix,1e9))e.push('Prix en FCFA obligatoire (nombre entier).');
+  if(v.prix!==null&&v.prix!==undefined&&!entier(v.prix,1e9))e.push('Prix invalide (nombre entier en FCFA).');
   if(v.ancien_prix!==null&&v.ancien_prix!==undefined&&(!entier(v.ancien_prix,1e9)||!(v.ancien_prix>v.prix)))e.push('L’ancien prix doit être supérieur au prix actuel.');
   if(v.stock!==null&&v.stock!==undefined&&!entier(v.stock,1e6))e.push('Stock invalide (nombre entier).');
  }

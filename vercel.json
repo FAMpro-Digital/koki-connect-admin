@@ -65,7 +65,8 @@
       "feature/livre-autorise-lecteur-pdf": false,
       "fix/publication-photo-admin": false,
       "fix/publication-video-source": false,
-      "feature/stock-facultatif": false
+      "feature/stock-facultatif": false,
+      "feature/prix-facultatif": false
     }
   }
 }
