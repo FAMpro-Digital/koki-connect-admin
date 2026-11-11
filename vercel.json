@@ -64,7 +64,8 @@
       "feature/notifications-sms-push": false,
       "feature/livre-autorise-lecteur-pdf": false,
       "fix/publication-photo-admin": false,
-      "fix/publication-video-source": false
+      "fix/publication-video-source": false,
+      "feature/stock-facultatif": false
     }
   }
 }
