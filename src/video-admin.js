@@ -1,4 +1,5 @@
 import {validateVideo} from './video-contract.js';
+import {preparerVideo} from './video-compression.js';
 
 export async function renderVideos(main,{n,button,db,result,guard,account,can,media,refresh}){
   const editable=can(account?.role,'content');
@@ -14,10 +15,10 @@ export async function renderVideos(main,{n,button,db,result,guard,account,can,me
   const file=document.createElement('input');file.type='file';file.accept='video/mp4,video/webm';
   const add=(label,element)=>{const wrapper=document.createElement('label');wrapper.append(n('span',label),element);form.append(wrapper);};
   add('Publication',content);add('Source',source);add('Lien YouTube',url);add('Fichier vidéo',file);
-  const submit=button('Ajouter la vidéo');submit.type='submit';submit.className='primary';submit.disabled=!editable;form.append(submit);
+  const etat=n('p');etat.setAttribute('role','status');const submit=button('Ajouter la vidéo');submit.type='submit';submit.className='primary';submit.disabled=!editable;form.append(submit,etat);
   const toggle=()=>{url.hidden=source.value!=='youtube';file.hidden=source.value!=='upload';};
   source.onchange=toggle;toggle();
-  form.onsubmit=async event=>{event.preventDefault();submit.disabled=true;try{await guard();const video=validateVideo({source:source.value,file:file.files[0],youtubeUrl:url.value});const row={content_id:content.value,...video};if(source.value==='upload')row.storage_path=await media(file.files[0]);await result(db.from('koki_content_media').insert(row));await refresh();}catch(error){panel.prepend(n('p',error.message));}finally{submit.disabled=!editable;}};
+  form.onsubmit=async event=>{event.preventDefault();submit.disabled=true;try{await guard();let fichier=file.files[0];if(source.value==='upload')fichier=await preparerVideo(fichier,t=>{etat.textContent=t;});const video=validateVideo({source:source.value,file:fichier,youtubeUrl:url.value});const row={content_id:content.value,...video};if(source.value==='upload')row.storage_path=await media(fichier);await result(db.from('koki_content_media').insert(row));await refresh();}catch(error){panel.prepend(n('p',error.message));}finally{submit.disabled=!editable;}};
   panel.append(form);
   const rows=await result(db.from('koki_content_media').select('id,content_id,source,storage_path').order('created_at',{ascending:false}).limit(100));
   const list=n('div');list.className='list';
