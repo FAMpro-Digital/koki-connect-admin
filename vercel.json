@@ -67,7 +67,8 @@
       "fix/publication-video-source": false,
       "feature/stock-facultatif": false,
       "feature/prix-facultatif": false,
-      "feature/koki-en-direct": false
+      "feature/koki-en-direct": false,
+      "feature/fiches-signalees": false
     }
   }
 }
