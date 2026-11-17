@@ -1,9 +1,9 @@
 export const roles={superadmin:['read','content','commerce','transport','audit'],manager:['read','commerce','transport'],editor:['read','content'],analyst:['read']};
 export const types=['Actualités','Annonces','Publicités','Événements','Sports & ASC','Opportunités','Informations utiles'];
-export const categories=['Actualité générale','Éducation','Sport','Jeunesse','Économie','Agriculture/élevage','Santé','Religion','Culture','Vie communautaire','Communiqué','Petite annonce','Avis important','Objet perdu/trouvé','Emploi','Stage','Formation','Concours','Bourse','Financement','Appel à projets','Match à venir','Résultat','Compétition'];
+export const categories=['Actualité générale','Éducation','Sport','Jeunesse','Économie','Agriculture/élevage','Santé','Religion','Culture','Vie communautaire','Communiqué','Petite annonce','Avis important','Décès et cérémonies','Coupure eau/électricité','Objet perdu/trouvé','Emploi','Stage','Formation','Concours','Bourse','Financement','Appel à projets','Match à venir','Résultat','Compétition'];
 // Catégories proposées selon le type de publication (une rubrique ne voit que les siennes). Les valeurs déjà enregistrées restent acceptées.
 export const categoriesParType={'Actualités':['Actualité générale','Éducation','Sport','Jeunesse','Économie','Agriculture/élevage','Santé','Religion','Culture','Vie communautaire'],
- 'Annonces':['Communiqué','Avis important','Petite annonce','Objet perdu/trouvé','Santé','Éducation','Vie communautaire'],
+ 'Annonces':['Communiqué','Avis important','Décès et cérémonies','Coupure eau/électricité','Petite annonce','Objet perdu/trouvé','Santé','Éducation','Vie communautaire'],
  'Sports & ASC':['Match à venir','Résultat','Compétition','Sport','Jeunesse'],
  'Opportunités':['Emploi','Stage','Formation','Concours','Bourse','Financement','Appel à projets']};
 export function categoriesPour(type,actuelle=''){const xs=[...(categoriesParType[type]||categories)];if(actuelle&&!xs.includes(actuelle))xs.push(actuelle);return xs;}
