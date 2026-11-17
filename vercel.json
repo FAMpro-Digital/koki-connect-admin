@@ -68,7 +68,8 @@
       "feature/stock-facultatif": false,
       "feature/prix-facultatif": false,
       "feature/koki-en-direct": false,
-      "feature/fiches-signalees": false
+      "feature/fiches-signalees": false,
+      "feature/compression-video": false
     }
   }
 }
