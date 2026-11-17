@@ -69,7 +69,8 @@
       "feature/prix-facultatif": false,
       "feature/koki-en-direct": false,
       "feature/fiches-signalees": false,
-      "feature/compression-video": false
+      "feature/compression-video": false,
+      "fix/envoi-video-admin": false
     }
   }
 }
