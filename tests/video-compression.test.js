@@ -24,6 +24,6 @@ test('échec de la compression : la vidéo d’origine est envoyée et la person
  delete globalThis.document;
 });
 test('les deux envois de vidéo passent par la compression avant le contrôle de taille',()=>{
- const a=fs.readFileSync('src/video-admin.js','utf8');assert.ok(a.indexOf('preparerVideo(fichier')<a.indexOf('validateVideo({source:source.value,file:fichier'));assert.ok(a.includes('media(fichier)'));
+ const a=fs.readFileSync('src/video-admin.js','utf8');assert.ok(a.indexOf('preparerVideo(fichier')<a.indexOf('validateVideo({source:source.value,file:fichier'));assert.ok(!a.includes('media('),'une vidéo ne passe jamais par l’envoi des photos');assert.ok(a.includes("db.storage.from('koki-videos').upload(chemin,fichier,{contentType:fichier.type,upsert:false})"));
  const b=fs.readFileSync('src/app.js','utf8');assert.ok(b.indexOf('file=await preparerVideo(file')<b.indexOf("validateVideo({source:values.video_source,file,"));
 });
