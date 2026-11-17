@@ -1,12 +1,13 @@
 import {createClient} from '@supabase/supabase-js';
 import webpush from 'web-push';
 import {timingSafeEqual} from 'node:crypto';
+import {apnsConfigured,sendApns,tokenGone} from './_apns.js';
 
 export function allowedEndpoint(value){
  try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com'].includes(u.hostname);}catch{return false;}
 }
 const equal=(a,b)=>{if(typeof a!=='string'||typeof b!=='string')return false;const left=Buffer.from(a),right=Buffer.from(b);return left.length===right.length&&timingSafeEqual(left,right);};
-export function dispatchHandler({env=process.env,client=createClient,sendPush=webpush.sendNotification.bind(webpush),request=fetch}={}){
+export function dispatchHandler({env=process.env,client=createClient,sendPush=webpush.sendNotification.bind(webpush),request=fetch,apns=sendApns}={}){
  return async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   if(!['GET','POST'].includes(req.method))return res.status(405).json({error:'Méthode refusée'});
@@ -26,7 +27,16 @@ export function dispatchHandler({env=process.env,client=createClient,sendPush=we
     if(nError||!n)throw Error('Notification absente');
     // Le texte extérieur reste générique : aucun détail privé sur l'écran verrouillé.
     const body='Une nouvelle information vous attend dans Koki Connect. Ouvrez vos notifications.';
-    if(job.channel==='push'){
+    if(job.channel==='push'&&String(job.destination).startsWith('apns:')){
+     // Application iPhone : jeton APNs enregistré par koki_apns_register. Sans clé Apple configurée, l'envoi est ignoré.
+     const {data:d,error}=await db.from('koki_apns_devices').select('id,token').eq('id',String(job.destination).slice(5)).eq('user_id',n.recipient_id).maybeSingle();
+     if(error)throw error;
+     if(d&&apnsConfigured(env)){
+      const r=await apns(env,d.token,{title:'Koki Connect',body,id:job.notification_id});
+      if(r.status===200)state='sent';
+      else{if(tokenGone(r))await db.from('koki_apns_devices').delete().eq('id',d.id);throw Error('APNs '+r.status);}
+     }
+    }else if(job.channel==='push'){
      const {data:s,error}=await db.from('koki_push_subscriptions').select('*').eq('id',job.destination).eq('user_id',n.recipient_id).maybeSingle();
      if(error)throw error;
      if(s&&allowedEndpoint(s.endpoint)){
