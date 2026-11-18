@@ -111,7 +111,8 @@ test('Commerces & Services : parcours complet, validations et catalogue public',
   const text=JSON.stringify(catalog.map(({photos,image_path,...x})=>x));for(const secret of ['owner_id','client_id','moderation','merchant_submission',testActors.merchant,testActors.provider])assert.ok(!text.includes(secret),secret);
   // Photos publiques autorisées pour le produit épuisé, refusées une fois archivé.
   await db.query('reset role');assert.equal((await rows(db,'select koki_private.business_public_image($1) ok',[p1]))[0].ok,true);
-  assert.deepEqual((await rows(db,'select nom from koki_localites order by ordre')).map(r=>r.nom),C.localitesParDefaut);
+  // Base locale générée : graphie OpenStreetMap « Coki » ; la production est renommée « Koki » (supabase/production/2026-11-18-localite-koki.sql).
+  assert.deepEqual((await rows(db,'select nom from koki_localites order by ordre')).map(r=>r.nom),C.localitesParDefaut.map(n=>n==='Koki'?'Coki':n));
   await actor(db,null,'aal1','anon');assert.equal((await rpc(db,'localites')).length,10);
   await actor(db,testActors.merchant);await rpc(db,'archive',{request_id:key(),id:product.id,revision:await revisionOf(db,product.id)});
   await db.query('reset role');assert.equal((await rows(db,'select koki_private.business_public_image($1) ok',[p1]))[0].ok,false);

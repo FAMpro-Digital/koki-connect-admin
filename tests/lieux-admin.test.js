@@ -4,7 +4,7 @@ import {inventaire,bilanLieux,etatLieu,lireCoordonnees} from '../src/lieux-admin
 import {reference} from '../src/carte-reference.js';
 const L=globalThis.KokiLieuContract;
 // Empreintes : contrat identique dans le site public (assets/portail/lieu-contract.js) ; référence = lieux de assets/koki-carte.json.
-const EMPREINTE='c5c581043dc9116c1b03abe5aa5ce36260cffe8c58535fa766ad1092c956107e',REFERENCE='8763e5d4991b0f287b2e171a65e5db09e98d098daf720a92ba402b5dc6500320';
+const EMPREINTE='c5c581043dc9116c1b03abe5aa5ce36260cffe8c58535fa766ad1092c956107e',REFERENCE='d39668aa4f0a6e967c186e9f4ec69924dcd31941682da7283ef70548fda9ee27';
 const row=(titre,v,extra={})=>({id:extra.id||'r-'+titre,type:'Informations utiles',categorie:'Lieux de la carte',titre,resume:'r',lieu:'Koki',statut:'publié',publication:'2026-10-01T00:00:00Z',updated_at:'2026-10-01T00:00:00Z',texte:L.encode(v),...extra});
 const mairie={genre:'Services publics',latitude:15.506,longitude:-15.992,description:'Ouverte du lundi au vendredi'};
 test('contrat Lieux et référence de la carte : identiques au site public',()=>{
