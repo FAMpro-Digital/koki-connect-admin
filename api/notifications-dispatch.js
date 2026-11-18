@@ -1,6 +1,8 @@
 import {createClient} from '@supabase/supabase-js';
 import webpush from 'web-push';
 import {timingSafeEqual} from 'node:crypto';
+import {checkEnvironment,declaredEnvironment} from '../src/environment-guard.js';
+function environnementRefuse(env){try{checkEnvironment({environment:declaredEnvironment({koki:env.KOKI_ENV,vercel:env.VERCEL_ENV}),url:env.SUPABASE_URL});return false;}catch{return true;}}
 
 export function allowedEndpoint(value){
  try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com'].includes(u.hostname);}catch{return false;}
@@ -14,6 +16,7 @@ export function dispatchHandler({env=process.env,client=createClient,sendPush=we
   const push=env.NOTIFICATION_PUSH_ENABLED==='true'&&!!env.VAPID_PRIVATE_KEY&&!!env.VAPID_PUBLIC_KEY&&!!env.VAPID_SUBJECT;
   const sms=env.NOTIFICATION_SMS_ENABLED==='true'&&!!env.TWILIO_ACCOUNT_SID&&!!env.TWILIO_AUTH_TOKEN&&!!env.TWILIO_MESSAGING_SERVICE_SID;
   if(!env.SUPABASE_URL||!env.SUPABASE_SERVICE_ROLE_KEY||(!push&&!sms))return res.status(503).json({error:'Envois non configurés'});
+  if(environnementRefuse(env))return res.status(503).json({error:'Base non autorisée pour cet environnement'});
   const db=client(env.SUPABASE_URL,env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
   const result=await db.rpc('koki_notification_claim',{p_push:push,p_sms:sms});
   if(result.error)return res.status(503).json({error:'File indisponible'});

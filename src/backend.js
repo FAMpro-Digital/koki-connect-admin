@@ -3,10 +3,13 @@ import {isProcessedImage,inspectImage,MAX_OUTPUT} from './image-processing.js';
 import {createBusinessClient} from './business-client.js';
 import {createClient} from '@supabase/supabase-js';
 import {checkBackendTarget} from './backend-guard.js';
+import {checkEnvironment,declaredEnvironment} from './environment-guard.js';
 import {verifierLivre} from './livre-fichier.js';
 const url=import.meta.env.VITE_SUPABASE_URL,key=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 // Refuse une base locale hors « npm run dev:local » et toute base distante en mode local.
 export const target=checkBackendTarget({url,key,mode:import.meta.env.MODE,dev:import.meta.env.DEV});
+// Une préversion (test) ne peut jamais viser la production ; la production ne vise que la production.
+export const environment=checkEnvironment({environment:declaredEnvironment({koki:import.meta.env.VITE_KOKI_ENV,vercel:import.meta.env.VITE_VERCEL_ENV}),url}).environment;
 export const configured=target.configured;
 export const {error:authLinkError,onboarding}=authDestination(location.href);
 export const db=configured?createClient(url,key,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:true}}):null;
