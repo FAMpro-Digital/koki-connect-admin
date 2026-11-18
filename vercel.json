@@ -71,7 +71,8 @@
       "feature/koki-en-direct": false,
       "feature/fiches-signalees": false,
       "feature/compression-video": false,
-      "fix/envoi-video-admin": false
+      "fix/envoi-video-admin": false,
+      "etape1/separation-environnements": false
     }
   }
 }
