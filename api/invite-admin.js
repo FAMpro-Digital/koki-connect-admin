@@ -1,4 +1,6 @@
 import {createClient} from '@supabase/supabase-js';
+import {checkEnvironment,declaredEnvironment} from '../src/environment-guard.js';
+function environnementRefuse(env){try{checkEnvironment({environment:declaredEnvironment({koki:env.KOKI_ENV,vercel:env.VERCEL_ENV}),url:env.SUPABASE_URL});return false;}catch{return true;}}
 
 // Clé privilégiée uniquement dans l'environnement serveur, jamais dans VITE_*.
 export function invitationHandler({client=createClient,env=process.env}={}) {
@@ -7,6 +9,7 @@ export function invitationHandler({client=createClient,env=process.env}={}) {
   if(req.method!=='POST')return res.status(405).json({error:'Méthode refusée.'});
   const url=env.SUPABASE_URL,key=env.SUPABASE_SERVICE_ROLE_KEY,origin=env.KOKI_ADMIN_ORIGIN;
   if(!url||!key||!origin)return res.status(503).json({error:'Les invitations ne sont pas encore configurées sur le serveur.'});
+  if(environnementRefuse(env))return res.status(503).json({error:'Base non autorisée pour cet environnement.'});
   let redirect;try{redirect=new URL('/?action=invite',origin);if(redirect.protocol!=='https:')throw Error();}catch{return res.status(503).json({error:'Adresse administrateur non configurée.'});}
   if(req.headers.origin!==redirect.origin)return res.status(403).json({error:'Origine refusée.'});
   const token=/^Bearer (\S+)$/.exec(req.headers.authorization||'')?.[1];
