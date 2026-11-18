@@ -73,7 +73,7 @@ test('professionnels : pas de refus de fait sans motif, suspensions de fiches en
  const db=await base();
  try{
   await setupBusinessDB(db);
-  await actor(db,A.merchant);const f=await rpc(db,'save_profile',{request_id:key(),name:'Épicerie TEST',profile:'Commerçant',category:'Alimentation',phone:'+221771234567',village:'Koki'});
+  await actor(db,A.merchant);const f=await rpc(db,'save_profile',{request_id:key(),name:'Épicerie TEST',profile:'Commerçant',category:'Alimentation',phone:'+221771234567',village:'Coki'});
   assert.equal(f.statut,'En attente');
   await actor(db,A.admin,'aal2');
   await assert.rejects(rpc(db,'admin_review',{request_id:key(),id:f.id,decision:'suspend'}),MOTIF,'suspension d’une inscription en attente = refus sans motif');

@@ -6,7 +6,7 @@ async function base(){
  if(process.env.KOKI_DB_ADAPTER){const {psqlDB}=await import(process.env.KOKI_DB_ADAPTER);return psqlDB(process.env.KOKI_DB_NAME);}
  const {PGlite}=await import('@electric-sql/pglite');const pg=new PGlite();return {query:(q,v)=>v?pg.query(q,v):pg.exec(q).then(x=>x.at(-1)),close:()=>pg.close()};
 }
-const fiche=(profile,name)=>({request_id:key(),name,profile,category:profile==='Commerçant'?'Alimentation':'Plomberie',phone:'+221771234567',village:'Koki'});
+const fiche=(profile,name)=>({request_id:key(),name,profile,category:profile==='Commerçant'?'Alimentation':'Plomberie',phone:'+221771234567',village:'Coki'});
 test('professionnel non approuvé : rien n’est publié, seules les décisions de l’administration ouvrent le catalogue',async()=>{
  const db=await base();
  try{
@@ -17,7 +17,7 @@ test('professionnel non approuvé : rien n’est publié, seules les décisions 
   await actor(db,null,'aal1','anon');assert.ok(!(await rpc(db,'catalog')).some(x=>x.id===f.id));
   // Publication directe interdite tant que la fiche n'est pas approuvée.
   await actor(db,A.merchant);
-  await assert.rejects(rpc(db,'save_shop',{request_id:key(),parent_id:f.id,name:'Boutique TEST',village:'Koki'}),'boutique refusée avant approbation de la fiche');
+  await assert.rejects(rpc(db,'save_shop',{request_id:key(),parent_id:f.id,name:'Boutique TEST',village:'Coki'}),'boutique refusée avant approbation de la fiche');
   await assert.rejects(rpc(db,'moderate',{request_id:key(),id:f.id,revision:f.revision,decision:'approve'}),'le professionnel ne peut pas s’approuver');
   await assert.rejects(db.query("update public.koki_records set statut='Actif' where id=$1",[f.id]),'aucune écriture directe dans la table');
   // Un client ordinaire n'a aucun droit d'administration.
@@ -31,12 +31,12 @@ test('professionnel non approuvé : rien n’est publié, seules les décisions 
   const refuse=await rpc(db,'moderate',{request_id:key(),id:f.id,revision:f.revision,decision:'reject',note:'Photo de la devanture manquante'});
   assert.equal(refuse.statut,'Refusé');
   await actor(db,A.merchant);const vue=(await rpc(db,'get',{id:f.id}));assert.equal(vue.payload.moderation?.note,'Photo de la devanture manquante');
-  await assert.rejects(rpc(db,'save_shop',{request_id:key(),parent_id:f.id,name:'Boutique TEST',village:'Koki'}));
+  await assert.rejects(rpc(db,'save_shop',{request_id:key(),parent_id:f.id,name:'Boutique TEST',village:'Coki'}));
   // Correction et nouvel envoi : de nouveau en attente, puis approbation.
   const corrige=await rpc(db,'save_profile',{...fiche('Commerçant','Épicerie corrigée TEST'),id:f.id,revision:vue.revision});assert.equal(corrige.statut,'En attente');
   await actor(db,A.admin,'aal2');const ok=await rpc(db,'moderate',{request_id:key(),id:f.id,revision:corrige.revision,decision:'approve'});assert.equal(ok.statut,'Actif');
   // Boutique en attente : produits impossibles ; boutique approuvée : produits publiés.
-  await actor(db,A.merchant);const b=await rpc(db,'save_shop',{request_id:key(),parent_id:f.id,name:'Boutique TEST',village:'Koki'});assert.notEqual(b.statut,'Actif');
+  await actor(db,A.merchant);const b=await rpc(db,'save_shop',{request_id:key(),parent_id:f.id,name:'Boutique TEST',village:'Coki'});assert.notEqual(b.statut,'Actif');
   await assert.rejects(rpc(db,'save_product',{request_id:key(),parent_id:b.id,name:'Riz TEST',price:500,stock:2}),'produit refusé dans une boutique non approuvée');
   // Prestataire en attente : service impossible.
   await actor(db,A.provider);const s=await rpc(db,'save_profile',fiche('Prestataire de services','Plombier en attente TEST'));assert.equal(s.statut,'En attente');

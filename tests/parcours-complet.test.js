@@ -18,12 +18,12 @@ test('parcours complet : boutique en ligne, service, chauffeur',async()=>{
   await setupBusinessDB(db);
   // 1. Commerçant : fiche professionnelle (espace professionnel), validation, boutique, validation, produit.
   await actor(db,A.merchant);
-  const fiche=await rpc(db,'save_profile',{request_id:key(),name:'Épicerie TEST',profile:'Commerçant',category:'Alimentation',phone:'+221771234567',whatsapp:'+221771234567',village:'Koki',address:'Près du marché',hours:'Lundi–samedi 8 h–20 h',description:'Épicerie de quartier TEST'});
+  const fiche=await rpc(db,'save_profile',{request_id:key(),name:'Épicerie TEST',profile:'Commerçant',category:'Alimentation',phone:'+221771234567',whatsapp:'+221771234567',village:'Coki',address:'Près du marché',hours:'Lundi–samedi 8 h–20 h',description:'Épicerie de quartier TEST'});
   assert.notEqual(fiche.statut,'Actif','fiche en attente avant validation');
   await actor(db,null,'aal1','anon');assert.ok(!(await rpc(db,'catalog')).some(x=>x.id===fiche.id),'invisible avant validation');
   const ficheOk=await valider(db,fiche);assert.equal(ficheOk.statut,'Actif');
   await actor(db,A.merchant);
-  const boutique=await rpc(db,'save_shop',{request_id:key(),parent_id:fiche.id,name:'Boutique du marché TEST',village:'Koki',whatsapp:'+221761234567'});
+  const boutique=await rpc(db,'save_shop',{request_id:key(),parent_id:fiche.id,name:'Boutique du marché TEST',village:'Coki',whatsapp:'+221761234567'});
   const boutiqueOk=await valider(db,boutique);assert.equal(boutiqueOk.statut,'Actif');
   await actor(db,A.merchant);
   const riz=await rpc(db,'save_product',{request_id:key(),parent_id:boutique.id,name:'Riz 5 kg TEST',price:4500,old_price:5000,stock:8});
@@ -42,7 +42,7 @@ test('parcours complet : boutique en ligne, service, chauffeur',async()=>{
 
   // 4. Prestataire : fiche, validation, service sur devis, demande, devis proposé puis accepté, service terminé.
   await actor(db,A.provider);
-  const pro=await rpc(db,'save_profile',{request_id:key(),name:'Plombier TEST',profile:'Prestataire de services',category:'Plomberie',phone:'+221781234567',village:'Koki',zone:'Koki et villages voisins',description:'Dépannage plomberie TEST'});
+  const pro=await rpc(db,'save_profile',{request_id:key(),name:'Plombier TEST',profile:'Prestataire de services',category:'Plomberie',phone:'+221781234567',village:'Coki',zone:'Koki et villages voisins',description:'Dépannage plomberie TEST'});
   await valider(db,pro);await actor(db,A.provider);
   const service=await rpc(db,'save_service',{request_id:key(),parent_id:pro.id,name:'Réparation de fuite TEST',category:'Plomberie',pricing:'devis'});
   assert.equal(service.statut,'Disponible');

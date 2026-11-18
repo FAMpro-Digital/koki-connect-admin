@@ -70,7 +70,7 @@ begin
  m:=pg_temp.koki_as(merchant,'aal1','register_professional','{"name":"TEST Boutique","phone":"+999000000003","profile":"Commerçant"}');
  p:=pg_temp.koki_as(provider,'aal1','register_professional','{"name":"TEST Prestataire","phone":"+999000000004","profile":"Prestataire de services"}');
  -- Compléments de fiche (WhatsApp, village, horaires) avant la validation par l'administration.
- perform pg_temp.koki_as(merchant,'aal1','save_profile_details',jsonb_build_object('revision',(select x.revision from public.koki_records x where x.id=(m->>'id')::uuid),'whatsapp','+999000000003','village','Koki','hours','Lundi–samedi 8 h–20 h'));
+ perform pg_temp.koki_as(merchant,'aal1','save_profile_details',jsonb_build_object('revision',(select x.revision from public.koki_records x where x.id=(m->>'id')::uuid),'whatsapp','+999000000003','village','Coki','hours','Lundi–samedi 8 h–20 h'));
  perform pg_temp.koki_as(provider,'aal1','save_profile_details',jsonb_build_object('revision',(select x.revision from public.koki_records x where x.id=(p->>'id')::uuid),'whatsapp','+999000000004','village','Pallene','zone','Koki et villages voisins'));
  foreach item in array array[d,v,m,p] loop
   perform pg_temp.koki_as(admin,'aal2','admin_review',jsonb_build_object('id',item->>'id','decision','approve'));
@@ -80,7 +80,7 @@ begin
  end loop;
  perform pg_temp.koki_as(driver,'aal1','driver_position','{"position":{"latitude":15.56,"longitude":-16.21},"available":true}');
  -- Commerces & Services : fiche complétée, boutique validée par l'administration, offres publiées.
- shop:=pg_temp.koki_as(merchant,'aal1','save_shop',jsonb_build_object('name','TEST Boutique Koki','address','TEST Marché central','village','Koki','hours','Lundi–samedi 8 h–20 h','whatsapp','+999000000003','category','Alimentation','description','Boutique fictive pour les tests.'));
+ shop:=pg_temp.koki_as(merchant,'aal1','save_shop',jsonb_build_object('name','TEST Boutique Koki','address','TEST Marché central','village','Coki','hours','Lundi–samedi 8 h–20 h','whatsapp','+999000000003','category','Alimentation','description','Boutique fictive pour les tests.'));
  shop:=pg_temp.koki_as(admin,'aal2','moderate',jsonb_build_object('id',shop->>'id','revision',(shop->>'revision')::int,'decision','approve'));
  perform pg_temp.koki_as(merchant,'aal1','save_product',jsonb_build_object('parent_id',shop->>'id','name','TEST Riz 1 kg','category','Alimentation','price',500,'old_price',600,'stock',20));
  perform pg_temp.koki_as(merchant,'aal1','save_product',jsonb_build_object('parent_id',shop->>'id','name','TEST Huile 1 L','category','Alimentation','price',1200,'stock',10));
@@ -88,7 +88,7 @@ begin
  -- Deuxième boutique laissée « À valider » : alimente la file de validation de l'administration.
  perform pg_temp.koki_as(merchant,'aal1','save_shop',jsonb_build_object('name','TEST Annexe Ouarak','village','Ouarak','description','Boutique fictive en attente de validation.'));
  perform pg_temp.koki_as(provider,'aal1','save_service',jsonb_build_object('name','TEST Plomberie','category','Plomberie','pricing','devis','zone','Koki et environs'));
- perform pg_temp.koki_as(provider,'aal1','save_service',jsonb_build_object('name','TEST Pose de robinet','category','Plomberie','pricing','fixe','price',3000,'zone','Koki'));
+ perform pg_temp.koki_as(provider,'aal1','save_service',jsonb_build_object('name','TEST Pose de robinet','category','Plomberie','pricing','fixe','price',3000,'zone','Coki'));
  -- Fiche commerçant soumise, en attente de validation (parcours « submit_merchant »).
  perform pg_temp.koki_as(pending,'aal1','submit_merchant',jsonb_build_object('name','TEST Quincaillerie en attente','profile','Commerçant','category','Boutique et quincaillerie','phone','+999000000005','address','TEST Route principale','location',jsonb_build_object('latitude',15.56,'longitude',-16.21),'hours','Tous les jours 9 h–19 h','description','Fiche fictive en attente de validation.','photos','[]'::jsonb));
  perform set_config('request.jwt.claim.sub','',true);

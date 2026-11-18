@@ -48,7 +48,7 @@ test('Supabase local : migrations + données fictives, flux public et commandes 
   await db.query('set role anon');const catalog=(await as(db,"select public.koki_business('catalog','{}'::jsonb) c"))[0].c;await db.query('reset role');
   const names=catalog.map(x=>x.nom);for(const n of ['TEST Boutique Koki','TEST Riz 1 kg','TEST Sucre 1 kg','TEST Plomberie','TEST Pose de robinet'])assert.ok(names.includes(n),n);
   for(const n of ['TEST Annexe Ouarak','TEST Quincaillerie en attente'])assert.ok(!names.includes(n),n);
-  assert.equal(catalog.find(x=>x.nom==='TEST Boutique Koki').village,'Koki');assert.equal(catalog.find(x=>x.nom==='TEST Sucre 1 kg').statut,'Épuisé');assert.equal(catalog.find(x=>x.nom==='TEST Riz 1 kg').ancien_prix,600);
+  assert.equal(catalog.find(x=>x.nom==='TEST Boutique Koki').village,'Coki');assert.equal(catalog.find(x=>x.nom==='TEST Sucre 1 kg').statut,'Épuisé');assert.equal(catalog.find(x=>x.nom==='TEST Riz 1 kg').ancien_prix,600);
   // Crochet SMS local : enregistre le code, n'envoie rien.
   await db.query('set role supabase_auth_admin');await db.query(`select koki_local.send_sms('{"user":{"phone":"221770000000"},"sms":{"otp":"654321"}}')`);await db.query('reset role');
   assert.deepEqual(await as(db,'select phone,code from koki_local.sms_codes'),[{phone:'221770000000',code:'654321'}]);
