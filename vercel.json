@@ -72,6 +72,7 @@
       "feature/fiches-signalees": false,
       "feature/compression-video": false,
       "fix/envoi-video-admin": false,
+      "etape1/historique-migrations": false,
       "etape1/separation-environnements": false
     }
   }
