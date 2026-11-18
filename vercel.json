@@ -40,6 +40,7 @@
   ],
   "git": {
     "deploymentEnabled": {
+      "fix/koki-localite": false,
       "develop/desarchiver": false,
       "develop/phases-2-6": false,
       "develop/education-bibliotheque": false,

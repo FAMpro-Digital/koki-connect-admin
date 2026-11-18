@@ -65,7 +65,7 @@ test('Commerces & Services : parcours complet, validations et catalogue public',
   await actor(db,testActors.merchant);
   await assert.rejects(rpc(db,'save_profile_details',{request_id:key(),revision:await revisionOf(db,f.merchant.id),village:'Paris'}),/inconnu/);
   await actor(db,testActors.merchant);
-  const details=await rpc(db,'save_profile_details',{request_id:key(),revision:await revisionOf(db,f.merchant.id),village:'Coki',hours:'Lundi–samedi 8 h–20 h'});
+  const details=await rpc(db,'save_profile_details',{request_id:key(),revision:await revisionOf(db,f.merchant.id),village:'Koki',hours:'Lundi–samedi 8 h–20 h'});
   assert.equal(details.statut,'Actif','changer le village ou les horaires ne renvoie pas en validation');
   await actor(db,testActors.merchant);
   const contact=await rpc(db,'save_profile_details',{request_id:key(),revision:details.revision,whatsapp:'+221771234567'});
@@ -131,7 +131,7 @@ test('permissions : propriétaire seul sur ses fiches, administration Commerce a
   await actor(db,testActors.client);await assert.rejects(rpc(db,'save_product',{request_id:key(),id:f.product.id,revision:await rev(f.product.id),parent_id:f.shop.id,name:'TEST piraté',price:1,stock:1}),/Propriétaire|inaccessible/);
   await actor(db,testActors.client);await assert.rejects(rpc(db,'set_availability',{request_id:key(),id:f.product.id,revision:await rev(f.product.id),status:'Masqué'}),/inaccessible/);
   await actor(db,testActors.provider);await assert.rejects(rpc(db,'archive',{request_id:key(),id:f.product.id,revision:await rev(f.product.id)}),/inaccessible/);
-  await actor(db,testActors.client);await assert.rejects(rpc(db,'save_profile_details',{request_id:key(),revision:1,village:'Coki'}),/Fiche professionnelle requise/);
+  await actor(db,testActors.client);await assert.rejects(rpc(db,'save_profile_details',{request_id:key(),revision:1,village:'Koki'}),/Fiche professionnelle requise/);
   // Décisions réservées à l'administration Commerce avec double authentification.
   const decide=async(who,aal)=>{await actor(db,who,aal);return rpc(db,'moderate',{request_id:key(),id:f.shop.id,revision:await rev(f.shop.id),decision:'suspend'});};
   await assert.rejects(decide(testActors.merchant,'aal2'),/Administration Commerce/);
@@ -158,7 +158,7 @@ test('permissions : propriétaire seul sur ses fiches, administration Commerce a
   await assert.rejects(db.query("select koki_private.merchant_business('catalog','{}')"));
   await assert.rejects(db.query("insert into koki_localites(nom) values('TEST Village pirate')"));
   await actor(db,testActors.admin,'aal2');await db.query("insert into koki_localites(nom,type) values('TEST Nouveau quartier','Quartier')");
-  await actor(db,testActors.admin,'aal2');await assert.rejects(db.query("delete from koki_localites where nom='Coki'"));
+  await actor(db,testActors.admin,'aal2');await assert.rejects(db.query("delete from koki_localites where nom='Koki'"));
  }finally{await pg.close();}
 });
 
@@ -181,7 +181,7 @@ test('fiche unifiée save_profile : GPS facultatif, statuts, revalidation et gar
  const {pg,db}=open();
  try{
   await setupBusinessDB(db);const f=await fixtureBusiness(db);const rev=id=>revisionOf(db,id);
-  const base={name:'TEST Atelier Fall',profile:'Les deux',category:'Couture',phone:'77 123 45 67',village:'Coki'};
+  const base={name:'TEST Atelier Fall',profile:'Les deux',category:'Couture',phone:'77 123 45 67',village:'Koki'};
   await actor(db,testActors.client);await assert.rejects(rpc(db,'save_profile',{request_id:key(),...base}),/Numéro de téléphone invalide/,'le serveur exige le format international');
   await actor(db,testActors.client);await assert.rejects(rpc(db,'save_profile',{request_id:key(),...base,phone:'+221771234567',village:'Dakar'}),/inconnu/);
   await actor(db,testActors.client);await assert.rejects(rpc(db,'save_profile',{request_id:key(),...base,phone:'+221771234567',village:''}),/village/);
@@ -211,10 +211,10 @@ test('fiche unifiée save_profile : GPS facultatif, statuts, revalidation et gar
   await actor(db,testActors.admin,'aal2');const refused=await rpc(db,'moderate',{request_id:key(),id:second.id,revision:second.revision,decision:'reject',note:'TEST photo manquante'});assert.equal(refused.statut,'Refusé');
   await actor(db,testActors.other);const fixed=await rpc(db,'save_profile',{request_id:key(),...base,phone:'+221781234567',id:second.id,revision:refused.revision,name:'TEST Second atelier corrigé'});assert.equal(fixed.statut,'En attente');assert.equal(fixed.payload.nom,'TEST Second atelier corrigé');
   // Retirer une activité qui a encore des offres est refusé (fiche du prestataire de la fixture).
-  await actor(db,testActors.provider);await assert.rejects(rpc(db,'save_profile',{request_id:key(),id:f.provider.id,revision:await rev(f.provider.id),name:'TEST Prestataire',profile:'Commerçant',category:'Plomberie',phone:'+999000000003',village:'Coki'}),/Archivez vos services/);
+  await actor(db,testActors.provider);await assert.rejects(rpc(db,'save_profile',{request_id:key(),id:f.provider.id,revision:await rev(f.provider.id),name:'TEST Prestataire',profile:'Commerçant',category:'Plomberie',phone:'+999000000003',village:'Koki'}),/Archivez vos services/);
   // Une fiche suspendue n'est pas modifiable par son propriétaire.
   await actor(db,testActors.admin,'aal2');await rpc(db,'moderate',{request_id:key(),id:f.merchant.id,revision:await rev(f.merchant.id),decision:'suspend'});
-  await actor(db,testActors.merchant);await assert.rejects(rpc(db,'save_profile',{request_id:key(),id:f.merchant.id,revision:await rev(f.merchant.id),name:'TEST',profile:'Commerçant',category:'X',phone:'+999000000002',village:'Coki'}),/administration/);
+  await actor(db,testActors.merchant);await assert.rejects(rpc(db,'save_profile',{request_id:key(),id:f.merchant.id,revision:await rev(f.merchant.id),name:'TEST',profile:'Commerçant',category:'X',phone:'+999000000002',village:'Koki'}),/administration/);
  }finally{await pg.close();}
 });
 
@@ -237,7 +237,7 @@ test('photos : dossier anonyme, aucun identifiant de compte dans le catalogue, d
   await actor(db,testActors.client);await assert.rejects(db.query('delete from storage.objects where name=$1 returning name',[path]).then(r=>{if(!r.rows.length)throw Error('refusé');}));
   // Photo d'une modification en attente : propriétaire et administration seulement, jamais le public.
   const pendingPath=folder+'/'+key()+'.jpg';await actor(db,testActors.merchant);await db.query("insert into storage.objects(bucket_id,name) values('koki-media',$1)",[pendingPath]);
-  await actor(db,testActors.merchant);const changed=await rpc(db,'save_profile',{request_id:key(),id:f.merchant.id,revision:await revisionOf(db,f.merchant.id),name:'TEST Boutique',profile:'Commerçant',category:'Alimentation',phone:'+999000000002',village:'Coki',photos:[pendingPath]});
+  await actor(db,testActors.merchant);const changed=await rpc(db,'save_profile',{request_id:key(),id:f.merchant.id,revision:await revisionOf(db,f.merchant.id),name:'TEST Boutique',profile:'Commerçant',category:'Alimentation',phone:'+999000000002',village:'Koki',photos:[pendingPath]});
   assert.equal(changed.statut,'Actif');assert.deepEqual(changed.payload.modification.photos,[pendingPath]);
   await actor(db,null,'aal1','anon');assert.equal((await rows(db,'select name from storage.objects where name=$1',[pendingPath])).length,0,'photo en attente invisible du public');
   await actor(db,null,'aal1','anon');assert.ok(!JSON.stringify(await rpc(db,'catalog')).includes(pendingPath));

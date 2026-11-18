@@ -34,7 +34,7 @@ const categoriesCommerce=Object.freeze(['Alimentation','Boutique et quincailleri
 const metiers=Object.freeze(['Plomberie','Électricité','Maçonnerie','Menuiserie','Couture','Mécanique','Coiffure','Transport et livraison','Informatique','Cours et formation','Autre']);
 // Liste de secours ; la liste de référence est la table koki_localites (modifiable dans l'admin).
 // Source : OpenStreetMap (assets/koki-carte.json), type village/quartier à confirmer.
-const localitesParDefaut=Object.freeze(['Bellel Ouolof','Coki','Kanène Khar','Keur Ngoura','Loumène','Ndare Wakhy','Ndiobene Belal','Ouarak','Pallene','Thiourour']);
+const localitesParDefaut=Object.freeze(['Bellel Ouolof','Koki','Kanène Khar','Keur Ngoura','Loumène','Ndare Wakhy','Ndiobene Belal','Ouarak','Pallene','Thiourour']);
 
 // Numéros : format international +XXXXXXXX ; numéros sénégalais à 9 chiffres (7x ou 3x) complétés en +221.
 function normaliserTelephone(value){

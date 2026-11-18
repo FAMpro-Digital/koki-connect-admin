@@ -5,9 +5,9 @@ const rev=async(db,id)=>{await db.query('reset role');return (await db.query('se
 async function world(){const {pg,db}=open();await setupBusinessDB(db);const f=await fixtureBusiness(db);
  await db.query('reset role');await db.query("insert into koki_admin_members(user_id,role) values($1,'analyst')",[testActors.other]);
  // Une inscription en attente (client), une boutique à valider, une modification de fiche en ligne.
- await actor(db,testActors.client);const pending=await rpc(db,'save_profile',{request_id:key(),name:'TEST Atelier en attente',profile:'Les deux',category:'Couture',phone:'+221771234567',village:'Coki'});
+ await actor(db,testActors.client);const pending=await rpc(db,'save_profile',{request_id:key(),name:'TEST Atelier en attente',profile:'Les deux',category:'Couture',phone:'+221771234567',village:'Koki'});
  await actor(db,testActors.merchant);const shop2=await rpc(db,'save_shop',{request_id:key(),name:'TEST Annexe',village:'Ouarak'});
- await actor(db,testActors.provider);const modif=await rpc(db,'save_profile',{request_id:key(),id:f.provider.id,revision:await rev(db,f.provider.id),name:'TEST Prestataire renommé',profile:'Prestataire de services',category:'Plomberie',phone:'+999000000003',village:'Coki'});
+ await actor(db,testActors.provider);const modif=await rpc(db,'save_profile',{request_id:key(),id:f.provider.id,revision:await rev(db,f.provider.id),name:'TEST Prestataire renommé',profile:'Prestataire de services',category:'Plomberie',phone:'+999000000003',village:'Koki'});
  return {pg,db,f,pending,shop2,modif};}
 
 test('statistiques réelles : comptages exacts, lecture avec MFA, refus sinon',async()=>{
@@ -48,7 +48,7 @@ test('aucun auto-validation, chaîne parente exigée, MFA et rôle exigés',asyn
  const {pg,db,f,shop2}=await world();
  try{
   // L'administrateur possède aussi une fiche professionnelle : il ne peut ni la valider ni la corriger.
-  await actor(db,testActors.admin,'aal2');const own=await rpc(db,'save_profile',{request_id:key(),name:'TEST Fiche de l’admin',profile:'Commerçant',category:'Alimentation',phone:'+221701234567',village:'Coki'});
+  await actor(db,testActors.admin,'aal2');const own=await rpc(db,'save_profile',{request_id:key(),name:'TEST Fiche de l’admin',profile:'Commerçant',category:'Alimentation',phone:'+221701234567',village:'Koki'});
   for(const [command,input] of [['moderate',{decision:'approve'}],['admin_review',{decision:'approve'}],['admin_update',{name:'TEST'}]]){await actor(db,testActors.admin,'aal2');await assert.rejects(rpc(db,command,{request_id:key(),id:own.id,revision:own.revision,...input}),/propres fiches/,command);}
   await actor(db,testActors.admin,'aal1');await assert.rejects(rpc(db,'moderate',{request_id:key(),id:shop2.id,revision:shop2.revision,decision:'approve'}),/MFA/);
   await actor(db,testActors.other,'aal2');await assert.rejects(rpc(db,'admin_records',{kind:'boutiques'}),/Administration Commerce/);
