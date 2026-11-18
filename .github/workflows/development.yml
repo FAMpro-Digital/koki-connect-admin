@@ -48,3 +48,25 @@ jobs:
             ip link set lo up
             exec runuser -u "$1" -- bash -euc "npm test; npm run build"
           ' -- "$(id -un)"
+
+  historique-sql:
+    # Rejoue l'historique SQL de référence dans un PostgreSQL local du runner
+    # et vérifie qu'il reproduit la structure relevée en production.
+    # Aucune connexion à Supabase : l'outil refuse tout hôte non local.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout reviewed development branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Start local PostgreSQL
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres createuser --superuser "$(id -un)"
+      - name: Replay reference history and compare with production fingerprint
+        env:
+          PGHOST: /var/run/postgresql
+          PGUSER: runner
+          PGDATABASE: postgres
+        run: bash supabase/historique/outils/verifier.sh
