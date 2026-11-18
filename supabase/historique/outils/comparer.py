@@ -1,7 +1,8 @@
 """Compare deux empreintes de structure (categorie|objet|empreinte).
 
 Ignorés : la fonction interne Supabase rls_auto_enable (créée par la
-plateforme) et les tâches planifiées (cron), propres à chaque environnement.
+plateforme), les tâches planifiées (cron), propres à chaque environnement,
+et le marqueur de la base de test (koki_private.test_environment).
 Code de sortie 1 s'il reste un écart.
 """
 import sys
@@ -20,7 +21,8 @@ def charger(chemin):
 
 
 def ignore(k):
-    return k == ("fonction", "public.rls_auto_enable()") or k[0] == "cron"
+    # Le marqueur « KOKI TEST » n'existe que sur la base de test.
+    return k == ("fonction", "public.rls_auto_enable()") or k[0] == "cron" or "koki_private.test_environment" in k[1]
 
 
 prod, local = charger(sys.argv[1]), charger(sys.argv[2])
