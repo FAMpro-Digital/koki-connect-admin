@@ -146,10 +146,11 @@ select t.ok(jsonb_array_length(public.koki_sport_public('clubs','{}'))=2,'anon :
 select t.ok(jsonb_array_length(public.koki_sport_public('club',jsonb_build_object('slug','koki-academie-foot'))->'joueurs')=0,'sans consentement : aucun joueur public');
 select t.ok(not (public.koki_sport_public('club',jsonb_build_object('slug','koki-academie-foot'))::text ~ '(Awa|Diop|Ibou|Fall|2015|2013|annee_naissance)'),'page publique sans nom, prénom ni année de naissance');
 reset role; set role authenticated; select t.as_user(:'respA');
-select t.err(format($$select t.call('consent_save','{"player_id":"%s","revision":1,"nom_public":"prenom_initiale","photo":true,"recueilli_le":"2026-11-20","mode":"papier"}')$$,:'p1'),'représentant légal','pas de consentement sans représentant légal');
+-- Migration 400 : l'affichage est décidé par le responsable (sans représentant légal obligatoire ; date et mode fixés par le serveur).
+select (t.call('consent_save',jsonb_build_object('player_id',:'p1','revision',1,'nom_public','prenom_initiale','photo',true,'stats',true,'recueilli_le','2001-01-01','mode','papier'))) as cs1 \gset
+select t.ok((:'cs1'::jsonb->>'mode')='responsable' and (:'cs1'::jsonb->>'recueilli_le')::date=current_date,'affichage décidé par le responsable : sans représentant, date et mode fixés par le serveur');
+select t.ok(not (:'cs1'::jsonb ? 'recueilli_par'),'auteur de la décision non exposé');
 select t.call('guardian_save',jsonb_build_object('player_id',:'p1','nom','Fatou Diop','lien','Mère','telephone','+221 77 000 00 00'));
-select t.err(format($$select t.call('consent_save','{"player_id":"%s","revision":1,"nom_public":"complet"}')$$,:'p1'),'check|violates','consentement sans date ni mode refusé');
-select t.call('consent_save',jsonb_build_object('player_id',:'p1','revision',1,'nom_public','prenom_initiale','photo',true,'stats',true,'recueilli_le','2026-11-20','mode','papier'));
 reset role; set role anon; select t.as_user(null);
 select t.ok((public.koki_sport_public('club',jsonb_build_object('slug','koki-academie-foot'))->'joueurs'->0->>'nom')='Awa D.','consentement « prénom + initiale » respecté');
 select t.ok(not (public.koki_sport_public('club',jsonb_build_object('slug','koki-academie-foot'))::text ~ '(Diop|Fatou|77 000|Ibou)'),'ni nom complet, ni représentant, ni téléphone, ni joueur non autorisé');
