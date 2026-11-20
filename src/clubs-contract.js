@@ -59,5 +59,8 @@ function messageErreur(e){const m=String(e&&e.message||e||'');
 
 const api={TYPES,DISCIPLINES,STATUTS_CLUB,ROLES,STATUTS_MATCH,STATUTS_SEANCE,TYPES_COMPETITION,TYPES_POST,NOM_PUBLIC,MODES_CONSENTEMENT,MOTIFS_SIGNALEMENT,STATUT_EXPLIQUE,
  texte,telephoneValide,uuid,normaliserCode,codeValide,youtubeId,lienYoutube,scoreTexte,issue,initiales,lienPartage,messageWhatsapp,lienWhatsapp,messageInvitation,versIso,versSaisie,messageErreur,couleurValide:v=>couleurRe.test(v)};
-if(typeof module==='object'&&module.exports)module.exports=api;else root.KokiClubsContract=Object.freeze(api);
+// Toujours publié sur l'objet global : un bundler (Vite) peut définir `module` et l'ancien `else` laissait
+// KokiClubsContract indéfini dans l'administration (« undefined is not an object (evaluating 'K.TYPES') »).
+Object.freeze(api);root.KokiClubsContract=api;
+if(typeof module==='object'&&module&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
