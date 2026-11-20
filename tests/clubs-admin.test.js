@@ -21,3 +21,9 @@ test('migrations Clubs : appliquées en production et inscrites dans la référe
   assert.ok(fs.existsSync('supabase/historique/migrations/'+f+'.sql')&&fs.existsSync('supabase/historique/retour/'+f+'.sql'),f);
   assert.match(fs.readFileSync('supabase/historique/migrations/'+f+'.sql','utf8'),/GARDE/,f+' : garde présente');}
  assert.equal(JSON.parse(fs.readFileSync('vercel.json','utf8')).git.deploymentEnabled['develop/clubs-academies'],false);});
+test('contrat Clubs : publié sur l’objet global même quand un bundler définit `module` (bug 20/11/2026)',async()=>{
+ const vm=await import('node:vm');const ctx={module:{exports:{}}};ctx.globalThis=ctx;
+ vm.runInNewContext(fs.readFileSync('src/clubs-contract.js','utf8'),ctx);
+ assert.ok(ctx.KokiClubsContract?.TYPES?.length,'KokiClubsContract doit exister sur l’objet global');
+ assert.equal(ctx.module.exports,ctx.KokiClubsContract);
+});
