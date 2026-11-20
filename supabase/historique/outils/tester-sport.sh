@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Vérifie le module Clubs & Académies (migrations EN ATTENTE 20261201*) sur une base LOCALE :
-#  1. rejoue la référence de production (verifier.sh : 549 éléments, 0 écart) ;
-#  2. applique les migrations du module, vérifie que chaque garde bloque une seconde application ;
+# Vérifie le module Clubs & Académies (migrations 20261201*, appliquées en production le 20/11/2026) sur une base LOCALE :
+#  1. rejoue la référence de production, module compris (verifier.sh : empreinte du 20/11/2026) ;
+#  2. vérifie que chaque garde bloque une seconde application ;
 #  3. exécute supabase/tests/sport-clubs.sql (rôles, isolation, accès directs, mineurs, stockage…) ;
-#  4. exécute les retours arrière et vérifie que la structure redevient IDENTIQUE à la production ;
-#  5. réapplique les migrations (cycle complet).
+#  4. exécute les retours arrière : la structure redevient IDENTIQUE à la production d'avant le module (18/11/2026) ;
+#  5. réapplique les migrations : la structure redevient IDENTIQUE à la production actuelle (20/11/2026).
 # Ne se connecte JAMAIS à Supabase : refuse tout hôte non local.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
@@ -26,9 +26,8 @@ echo "── 1. Référence de production"
 bash $H/outils/verifier.sh | tail -1
 psql -q -d postgres -v ON_ERROR_STOP=1 -c "drop database if exists $BASE_SPORT" -c "create database $BASE_SPORT template koki_historique" >/dev/null
 
-echo "── 2. Migrations et gardes"
+echo "── 2. Gardes (le module est déjà dans la référence)"
 for f in $M; do
-  psql -q -d $BASE_SPORT -v ON_ERROR_STOP=1 -f "$f" >/dev/null && echo "ok      $f"
   if psql -q -d $BASE_SPORT -v ON_ERROR_STOP=1 -f "$f" >/dev/null 2>&1; then echo "ÉCHEC : la garde n'a pas bloqué une 2e application de $f"; exit 1; fi
   echo "garde   seconde application bloquée"
 done
@@ -53,9 +52,13 @@ for f in $R; do
   echo "ok      $f"
 done
 psql -Atq -d $BASE_SPORT -f $H/outils/empreinte.sql > "${TMPDIR:-/tmp}/empreinte-sport-retour.txt"
+echo "état sans module (production du 18/11/2026) :"
 python3 $H/outils/comparer.py $H/reference/empreinte-production-2026-11-18.txt "${TMPDIR:-/tmp}/empreinte-sport-retour.txt"
 
 echo "── 5. Réapplication après retour"
-for f in $M; do psql -q -d $BASE_SPORT -v ON_ERROR_STOP=1 -f "$f" >/dev/null && echo "ok      $f"; done
+for f in $M $H/reference/sources/rattrapage_100_droits_sport.sql; do psql -q -d $BASE_SPORT -v ON_ERROR_STOP=1 -f "$f" >/dev/null && echo "ok      $f"; done
+psql -Atq -d $BASE_SPORT -f $H/outils/empreinte.sql > "${TMPDIR:-/tmp}/empreinte-sport-reapplique.txt"
+echo "état avec module (production du 20/11/2026) :"
+python3 $H/outils/comparer.py $H/reference/empreinte-production-2026-11-20.txt "${TMPDIR:-/tmp}/empreinte-sport-reapplique.txt"
 psql -q -d postgres -c "drop database $BASE_SPORT" >/dev/null
 echo "TERMINÉ : module Clubs & Académies vérifié en local."

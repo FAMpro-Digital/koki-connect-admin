@@ -1,5 +1,5 @@
 -- Espace Clubs & Académies — 3/3 : stockage des images (bucket privé koki-sport).
--- EN ATTENTE : non appliquée en production.
+-- APPLIQUÉE EN PRODUCTION le 20/11/2026 (accord écrit de Mourtada Fam). Voir supabase/production/README.md.
 -- Chemin imposé : <club_id>/<uuid>.(jpg|png|webp). Les buckets existants ne sont pas modifiés.
 
 begin;

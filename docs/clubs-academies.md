@@ -3,9 +3,10 @@
 Branche `develop/clubs-academies` (non déployable : `vercel.json` › `git.deploymentEnabled`).
 Conception complète et décisions D1–D9 : [clubs-academies-audit-conception.md](clubs-academies-audit-conception.md).
 
-> **Rien n'est appliqué en production ni en test Supabase.** Les migrations sont **en attente** et ne figurent pas
-> dans `supabase/historique/reference/ordre.txt` : la référence reste l'image exacte de la production
-> (la CI `historique-sql` reste verte).
+> **Base de données : appliquée en production le 20/11/2026** (accord écrit du propriétaire). Les 4 migrations figurent
+> dans `supabase/historique/reference/ordre.txt` ; la référence est `reference/empreinte-production-2026-11-20.txt`
+> (vérifiée identique à la production). Journal : `supabase/production/README.md`.
+> **Site public : module invisible** tant que `assets/business/config.json` n'a pas `"clubs": true`.
 
 ## Fichiers
 

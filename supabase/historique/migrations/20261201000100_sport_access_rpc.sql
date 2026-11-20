@@ -1,5 +1,5 @@
 -- Espace Clubs & Académies — 2/3 : contrôle d'accès, commandes, lecture publique.
--- EN ATTENTE : non appliquée en production.
+-- APPLIQUÉE EN PRODUCTION le 20/11/2026 (accord écrit de Mourtada Fam). Voir supabase/production/README.md.
 --
 --  public.koki_sport(command, input)        : comptes connectés (membres d'académie, abonnés, administrateurs aal2)
 --  public.koki_sport_public(command, input) : visiteurs (anon) — champs en liste blanche, filtre de consentement
@@ -86,7 +86,7 @@ begin
  r:=koki_sport.role_in(p_club);
  if r is null then return false; end if;
  if p_perm='read' then return true; end if;
- if st not in ('À valider','Actif') then return false; end if; -- Suspendu / Refusé : lecture seule
+ if st not in ('À valider','Actif') then return false; end if;
  return case p_perm
   when 'profile' then r in ('responsable','communication')
   when 'manage'  then r='responsable'
@@ -201,7 +201,6 @@ begin
  if input is null or jsonb_typeof(input)<>'object' or octet_length(input::text)>65536 then raise exception 'Requête invalide ou trop volumineuse'; end if;
  a:=koki_sport.actor();
 
- -- ═════ Compte connecté ═════
  if command='my_clubs' then
   perform koki_sport.keys(input,'{}');
   return coalesce((select jsonb_agg(koki_sport.club_json(c2)||jsonb_build_object('role',m2.role) order by c2.nom)
@@ -232,7 +231,6 @@ begin
   insert into koki_sport.invitation_attempts(actor_id) values(a);
   h:=encode(extensions.digest(upper(regexp_replace(koki_sport.t(input,'code'),'[^A-Za-z0-9]','','g')),'sha256'),'hex');
   select * into inv from koki_sport.club_invitations i where i.code_hash=h for update;
-  -- Pas d'exception ici : elle annulerait l'enregistrement de l'essai et désactiverait la limite anti force brute.
   if inv.id is null or inv.statut<>'active' or inv.expires_at<now() then return jsonb_build_object('ok',false,'erreur','Code d’invitation invalide ou expiré'); end if;
   if not koki_sport.club_writable(inv.club_id) then raise exception 'Cette académie n’accepte pas de nouveaux membres pour le moment'; end if;
   select * into mb from koki_sport.club_members where club_id=inv.club_id and user_id=a;
@@ -269,12 +267,10 @@ begin
   return jsonb_build_object('id',rid);
  end if;
 
- -- ═════ Administration FAMpro (MFA aal2 exigée par koki_private.allowed) ═════
  if command like 'admin\_%' then
   return koki_sport.admin(command,input);
  end if;
 
- -- ═════ Espace académie ═════
  if command='club_get' then
   perform koki_sport.keys(input,'{club_id}');
   club:=koki_sport.u(input,'club_id'); perform koki_sport.require(club,'read');
@@ -663,7 +659,6 @@ begin
  for k in 0..9 loop code:=code||substr(alphabet,(get_byte(b,k)%32)+1,1); end loop;
  insert into koki_sport.club_invitations(club_id,role,staff_id,code_hash,expires_at,created_by)
  values(p_club,p_role,p_staff,encode(extensions.digest(code,'sha256'),'hex'),now()+interval '72 hours',p_actor) returning * into i;
- -- Le code n'est renvoyé qu'une fois : seule son empreinte est conservée.
  return jsonb_build_object('id',i.id,'code',substr(code,1,5)||'-'||substr(code,6,5),'role',i.role,'expire',i.expires_at);
 end $$;
 
@@ -783,7 +778,6 @@ begin
       from koki_sport.categories k where k.club_id=c.id and k.statut='active'),'[]'),
    'encadrement',coalesce((select jsonb_agg(jsonb_build_object('prenom',s.prenom,'nom',s.nom,'fonction',s.fonction,'photo_path',s.photo_path) order by s.nom)
       from koki_sport.staff s where s.club_id=c.id and s.public and s.statut='actif'),'[]'),
-   -- Joueurs : uniquement ceux dont le représentant légal a autorisé un nom public.
    'joueurs',coalesce((select jsonb_agg(jsonb_build_object('nom',koki_sport.public_name(p.id),'categorie',k.nom,'poste',p.poste,'numero',p.numero,
        'photo_path',case when pc.photo then p.photo_path end) order by k.ordre,p.numero nulls last)
       from koki_sport.players p join koki_sport.player_consents pc on pc.player_id=p.id and pc.statut='actif' and pc.nom_public<>'aucun'

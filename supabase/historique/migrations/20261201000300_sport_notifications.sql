@@ -1,5 +1,5 @@
 -- Espace Clubs & Académies — 4 : notifications (décision D2).
--- EN ATTENTE : non appliquée en production.
+-- APPLIQUÉE EN PRODUCTION le 20/11/2026 (accord écrit de Mourtada Fam). Voir supabase/production/README.md.
 --  * public.koki_notifications : colonne facultative sport_ref (→ koki_sport.clubs) et contrainte « une seule cible »
 --    élargie à trois cibles. Les applications lisent id/title/body/created_at/read_at : inchangées.
 --  * public.koki_notification_claim : SEULE modification d'une fonction existante — les notifications du module

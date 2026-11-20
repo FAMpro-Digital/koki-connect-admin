@@ -1,6 +1,5 @@
 -- Espace Clubs & Académies — 1/3 : schéma, tables, contraintes, déclencheurs.
--- EN ATTENTE : non appliquée en production. Ne pas ajouter à reference/ordre.txt
--- avant application autorisée par le propriétaire (voir supabase/historique/README.md).
+-- APPLIQUÉE EN PRODUCTION le 20/11/2026 (accord écrit de Mourtada Fam). Voir supabase/production/README.md.
 --
 -- Principes :
 --  * schéma privé koki_sport : aucun droit direct pour anon/authenticated, RLS activée

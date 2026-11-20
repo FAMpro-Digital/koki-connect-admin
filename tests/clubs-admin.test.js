@@ -14,8 +14,9 @@ test('branchement : route clubs, accès depuis Sport, commandes admin uniquement
  assert.equal((sp.match(/navigate\('clubs'\)/g)||[]).length,2);
  const cmds=[...cl.matchAll(/appel\('([a-z_]+)'/g)].map(m=>m[1]);assert.ok(cmds.length>=7);for(const c of cmds)assert.match(c,/^admin_/,'aucune commande d’espace académie depuis l’administration : '+c);
  assert.doesNotMatch(cl,/players|player_get|guardian|consent|innerHTML/,'aucune donnée de joueur ni HTML injecté');});
-test('migrations Clubs : en attente, hors référence de production',()=>{
- const ordre=fs.readFileSync('supabase/historique/reference/ordre.txt','utf8');assert.doesNotMatch(ordre,/2026120100/);
+test('migrations Clubs : appliquées en production et inscrites dans la référence',()=>{
+ const ordre=fs.readFileSync('supabase/historique/reference/ordre.txt','utf8');for(const f of ['20261201000000','20261201000100','20261201000200','20261201000300'])assert.match(ordre,new RegExp(f));
+ assert.match(fs.readFileSync('supabase/historique/outils/verifier.sh','utf8'),/empreinte-production-2026-11-20\.txt/);
  for(const f of ['20261201000000_sport_schema','20261201000100_sport_access_rpc','20261201000200_sport_storage','20261201000300_sport_notifications']){
   assert.ok(fs.existsSync('supabase/historique/migrations/'+f+'.sql')&&fs.existsSync('supabase/historique/retour/'+f+'.sql'),f);
   assert.match(fs.readFileSync('supabase/historique/migrations/'+f+'.sql','utf8'),/GARDE/,f+' : garde présente');}
