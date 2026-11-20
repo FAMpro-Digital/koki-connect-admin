@@ -1,6 +1,9 @@
 -- Retour arrière de 20261201000100_sport_access_rpc.sql
 begin;
 do $$ begin
+ if exists(select 1 from information_schema.columns where table_schema='public' and table_name='koki_notifications' and column_name='sport_ref') then
+  raise exception 'RETOUR BLOQUÉ : exécutez d’abord le retour de 20261201000300_sport_notifications.sql';
+ end if;
  if exists(select 1 from pg_policies where schemaname='storage' and policyname like 'koki_sport_%') then
   raise exception 'RETOUR BLOQUÉ : exécutez d’abord le retour de 20261201000200_sport_storage.sql';
  end if;

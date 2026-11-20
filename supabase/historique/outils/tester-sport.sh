@@ -18,8 +18,8 @@ case "$PGHOST" in
   *) echo "REFUS : hôte « $PGHOST » non local." >&2; exit 2 ;;
 esac
 H=supabase/historique
-M="$H/migrations/20261201000000_sport_schema.sql $H/migrations/20261201000100_sport_access_rpc.sql $H/migrations/20261201000200_sport_storage.sql"
-R="$H/retour/20261201000200_sport_storage.sql $H/retour/20261201000100_sport_access_rpc.sql $H/retour/20261201000000_sport_schema.sql"
+M="$H/migrations/20261201000000_sport_schema.sql $H/migrations/20261201000100_sport_access_rpc.sql $H/migrations/20261201000200_sport_storage.sql $H/migrations/20261201000300_sport_notifications.sql"
+R="$H/retour/20261201000300_sport_notifications.sql $H/retour/20261201000200_sport_storage.sql $H/retour/20261201000100_sport_access_rpc.sql $H/retour/20261201000000_sport_schema.sql"
 BASE_SPORT=koki_sport_test
 
 echo "── 1. Référence de production"
@@ -34,16 +34,18 @@ for f in $M; do
 done
 
 echo "── 3. Tests fonctionnels et de sécurité"
-psql -d $BASE_SPORT -v ON_ERROR_STOP=1 -f supabase/tests/sport-clubs.sql 2>&1 | grep -E "Tests réussis|ÉCHEC|ERROR|ERREUR" || { echo "ÉCHEC des tests"; exit 1; }
+for t in supabase/tests/sport-clubs.sql supabase/tests/sport-notifications.sql; do
+  echo "$t"; psql -d $BASE_SPORT -v ON_ERROR_STOP=1 -f $t 2>&1 | grep -E "Tests réussis|ÉCHEC|ERROR|ERREUR" || { echo "ÉCHEC des tests"; exit 1; }
+done
 
 echo "── 4. Retour arrière (avec données de test : export préalable simulé)"
 for f in $R; do
   if [ "$f" = "$H/retour/20261201000200_sport_storage.sql" ]; then
     psql -q -d $BASE_SPORT -c "delete from storage.objects where bucket_id='koki-sport'" >/dev/null
   fi
-  if [ "$f" = "$H/retour/20261201000000_sport_schema.sql" ]; then
+  if [ "$f" = "$H/retour/20261201000000_sport_schema.sql" ] || [ "$f" = "$H/retour/20261201000300_sport_notifications.sql" ]; then
     if psql -q -d $BASE_SPORT -v ON_ERROR_STOP=1 -f "$f" >/dev/null 2>&1; then echo "ÉCHEC : le retour n'a pas protégé les données"; exit 1; fi
-    echo "garde   retour bloqué tant que des académies existent"
+    echo "garde   retour bloqué tant que des données existent"
     PGOPTIONS="-c koki.retour_force=oui" psql -q -d $BASE_SPORT -v ON_ERROR_STOP=1 -f "$f" >/dev/null
   else
     psql -q -d $BASE_SPORT -v ON_ERROR_STOP=1 -f "$f" >/dev/null

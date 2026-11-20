@@ -5,6 +5,6 @@ Voir `../README.md`, section 3.
 
 ## En attente (non appliquées, hors `reference/ordre.txt`)
 
-- `20261201000000_sport_schema.sql`, `20261201000100_sport_access_rpc.sql`, `20261201000200_sport_storage.sql` —
+- `20261201000000_sport_schema.sql`, `20261201000100_sport_access_rpc.sql`, `20261201000200_sport_storage.sql`, `20261201000300_sport_notifications.sql` —
   Espace Clubs & Académies. Vérification locale : `bash supabase/historique/outils/tester-sport.sh`.
   Voir `docs/clubs-academies.md`.

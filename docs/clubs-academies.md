@@ -14,11 +14,12 @@ Conception complète et décisions D1–D9 : [clubs-academies-audit-conception.m
 | `supabase/historique/migrations/20261201000000_sport_schema.sql` | Schéma privé `koki_sport`, 20 tables, FK composites, déclencheurs (journal, révision, dernier responsable, retrait de consentement) |
 | `supabase/historique/migrations/20261201000100_sport_access_rpc.sql` | `koki_sport.can()`, filtres de consentement, `public.koki_sport()` (connectés), `public.koki_sport_public()` (visiteurs), commandes `admin_*` |
 | `supabase/historique/migrations/20261201000200_sport_storage.sql` | Bucket privé `koki-sport` (images 1 Mo) et 4 règles |
+| `supabase/historique/migrations/20261201000300_sport_notifications.sql` | Colonne facultative `sport_ref` sur `koki_notifications` (3ᵉ cible), notifications membres / administrateurs / abonnés, **push uniquement** (`koki_notification_claim` exclut le module du SMS) |
 | `supabase/historique/retour/20261201000*.sql` | Retours arrière (ordre inverse ; le dernier refuse de détruire des données sans `koki.retour_force=oui`) |
-| `supabase/tests/sport-clubs.sql` | 105 vérifications |
+| `supabase/tests/sport-clubs.sql`, `supabase/tests/sport-notifications.sql` | 105 + 21 vérifications |
 | `supabase/historique/outils/tester-sport.sh` | Cycle complet local : référence → migrations → gardes → tests → retour → empreinte identique → réapplication |
 
-Aucune table, fonction, règle ou bucket existant n'est modifié. Réutilisés tels quels (gardés par empreinte MD5) :
+Seules modifications d'éléments existants (migration 4, décision D2) : colonne ajoutée et contrainte élargie sur `public.koki_notifications`, une condition ajoutée dans `public.koki_notification_claim` (pas de SMS pour le module). Le retour arrière restaure la définition d'origine (empreinte identique vérifiée). Réutilisés tels quels (gardés par empreinte MD5) :
 `koki_private.stamp()`, `koki_private.audit()`, `koki_private.allowed()`, `public.koki_localites`, `public.koki_audit`.
 
 ## Vérifier
@@ -27,7 +28,7 @@ Aucune table, fonction, règle ou bucket existant n'est modifié. Réutilisés t
 PGHOST=/tmp bash supabase/historique/outils/tester-sport.sh   # PostgreSQL local uniquement
 ```
 
-Résultat attendu : `identiques 549 | écarts 0`, gardes bloquantes, `Tests réussis : 105`, retour → `identiques 549 | écarts 0`.
+Résultat attendu : `identiques 549 | écarts 0`, gardes bloquantes, `Tests réussis : 105` et `21`, retour → `identiques 549 | écarts 0`.
 
 ## Commandes — `public.koki_sport(command, input)` (compte permanent connecté)
 
@@ -63,7 +64,6 @@ l'autorisation photo (ou vidéo pour YouTube) ; « mineurs reconnaissables » sa
 
 ## Reste à faire (étapes suivantes de la phase 3)
 
-- Lot 11 : notifications (colonne additive `sport_ref` sur `koki_notifications`, décision D2) et envoi aux abonnés.
 - Interfaces : espace académie (`koki-connect/assets/sport/club-space.mjs`), pages publiques, section admin `src/clubs-admin.js`,
   contrat partagé `clubs-contract.js`.
 - Tests navigateur et mobiles (Playwright), suite `npm test` de l'admin (dépendances à installer).
