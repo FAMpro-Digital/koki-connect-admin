@@ -43,4 +43,4 @@ done < $H/reference/ordre.txt
 [ "$echait" = 0 ] || exit 1
 
 psql -Atq -d "$BASE" -f $H/outils/empreinte.sql > "${TMPDIR:-/tmp}/empreinte-locale.txt"
-python3 $H/outils/comparer.py $H/reference/empreinte-production-2026-11-18.txt "${TMPDIR:-/tmp}/empreinte-locale.txt"
+python3 $H/outils/comparer.py $H/reference/empreinte-production-2026-11-20.txt "${TMPDIR:-/tmp}/empreinte-locale.txt"
