@@ -72,7 +72,7 @@ export async function renderMatchs(main,ctx){
   box.append(pm('−',()=>{sd=Math.max(0,sd-1);}),pm('+ Dom.',()=>{sd++;}),aff,pm('+ Ext.',()=>{se++;}),pm('−',()=>{se=Math.max(0,se-1);}),sel,ok);return box;
  }
  const add=button('Ajouter un match',()=>edit(),'primary');add.disabled=!editable||equipesActives.length<2;
- actions.append(add,button('👕 Équipes / ASC',()=>navigate('sport-equipes')),button('📰 Actualités sportives',()=>navigate('contenus:'+S.type)),button('Actualiser',refresh));
+ actions.append(add,button('👕 Équipes / ASC',()=>navigate('sport-equipes')),button('🎓 Académies',()=>navigate('clubs')),button('📰 Actualités sportives',()=>navigate('contenus:'+S.type)),button('Actualiser',refresh));
  if(equipesActives.length<2)main.append(n('p','Ajoutez au moins deux équipes dans « Équipes / ASC » pour programmer des matchs.'));
  const actifs=matchs.filter(m=>!m.archive);
  main.append(metriques(n,[['En direct',actifs.filter(m=>m.statut==='En direct').length,'Scores visibles en direct'],['À venir',actifs.filter(m=>m.statut==='À venir').length,'Programmés'],['Terminés',actifs.filter(m=>m.statut==='Terminé').length,'Comptent au classement'],['Équipes',equipesActives.length,'Équipes / ASC actives']]));
@@ -133,7 +133,7 @@ export async function renderEquipes(main,ctx){
   }catch(err){error(err);}finally{submit.disabled=false;}};
   main.append(f);
  }
- const add=button('Ajouter une équipe / ASC',()=>edit(),'primary');add.disabled=!editable;actions.append(add,button('📅 Matchs et résultats',()=>navigate('sport-matchs')),button('Actualiser',refresh));
+ const add=button('Ajouter une équipe / ASC',()=>edit(),'primary');add.disabled=!editable;actions.append(add,button('📅 Matchs et résultats',()=>navigate('sport-matchs')),button('🎓 Académies',()=>navigate('clubs')),button('Actualiser',refresh));
  const xs=[...equipes.values()].sort((a,b)=>a.archive-b.archive||a.nom.localeCompare(b.nom,'fr'));
  main.append(metriques(n,[['Équipes publiées',xs.filter(e=>etatSport(e.row,e)==='Publié').length,xs.filter(e=>e.archive).length+' archivée(s)'],['Joueurs',xs.reduce((s,e)=>s+(e.archive?0:e.joueurs.length),0),'Dans les effectifs'],['Sans logo',xs.filter(e=>!e.archive&&!e.row.image_path).length,'Pastille de couleur affichée']]));
  const list=n('div');list.className='list';main.append(list);

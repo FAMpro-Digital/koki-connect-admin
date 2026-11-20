@@ -228,6 +228,10 @@ select t.as_user(:'editor','aal2');
 select t.ok((t.call('admin_hide',jsonb_build_object('cible_type','post','id',:'post1','motif','Photo à vérifier')))->>'statut'='masqué','editor masque une actualité');
 select t.as_user(:'commA');
 select t.err(format($$select t.call('post_publish','{"id":"%s","revision":3}')$$,:'post1'),'masquée par la modération','l’académie ne republie pas un contenu masqué');
+select t.as_user(:'editor','aal2');
+select t.ok(jsonb_array_length(t.call('admin_posts','{"relais":"demandé"}'))=0 and jsonb_array_length(t.call('admin_posts','{}'))>=1,'admin_posts : liste des publications (hors brouillons)');
+select t.as_user(:'respA');
+select t.err($$select t.call('admin_posts','{}')$$,'refusé','admin_posts réservé aux administrateurs');
 
 -- ═════ 11. Suppression de compte (non-régression public.koki_account_delete) ═════
 select t.as_user(:'fan');

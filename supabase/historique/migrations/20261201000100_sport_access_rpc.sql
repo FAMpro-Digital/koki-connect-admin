@@ -685,6 +685,15 @@ begin
   return coalesce((select jsonb_agg(to_jsonb(r2)-'reporter_id'||jsonb_build_object('academie',(select nom from koki_sport.clubs where id=r2.club_id)) order by r2.created_at desc)
    from koki_sport.reports r2 where nullif(koki_sport.t(input,'statut'),'') is null or r2.statut=koki_sport.t(input,'statut')),'[]');
 
+ elsif command='admin_posts' then
+  if not koki_private.allowed('read') then perform koki_sport.deny(); end if;
+  perform koki_sport.keys(input,'{relais,club_id}');
+  return coalesce((select jsonb_agg(jsonb_build_object('id',p.id,'club_id',p.club_id,'academie',c2.nom,'type',p.type,'titre',p.titre,'texte',p.texte,'statut',p.statut,
+     'publication',p.publication,'relais',p.relais,'motif',p.motif,'revision',p.revision) order by p.updated_at desc)
+   from (select * from koki_sport.posts p2 where (nullif(koki_sport.t(input,'relais'),'') is null or p2.relais=koki_sport.t(input,'relais'))
+     and (koki_sport.u(input,'club_id',false) is null or p2.club_id=koki_sport.u(input,'club_id',false)) and p2.statut<>'brouillon' order by p2.updated_at desc limit 100) p
+   join koki_sport.clubs c2 on c2.id=p.club_id),'[]');
+
  elsif command='admin_review' then
   if not koki_private.allowed('commerce') then perform koki_sport.deny(); end if;
   perform koki_sport.keys(input,'{id,revision,decision,motif}');
