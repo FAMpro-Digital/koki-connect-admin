@@ -40,3 +40,4 @@ supabase/historique/migrations/20261201000100_sport_access_rpc.sql
 supabase/historique/migrations/20261201000200_sport_storage.sql
 supabase/historique/migrations/20261201000300_sport_notifications.sql
 supabase/historique/reference/sources/rattrapage_100_droits_sport.sql
+supabase/historique/migrations/20261201000400_sport_affichage_responsable.sql

@@ -75,7 +75,8 @@
       "etape1/historique-migrations": false,
       "etape1/separation-environnements": false,
       "develop/clubs-academies": false,
-      "fix/clubs-contrat-global": false
+      "fix/clubs-contrat-global": false,
+      "develop/affichage-responsable": false
     }
   }
 }

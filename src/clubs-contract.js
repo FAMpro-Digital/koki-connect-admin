@@ -12,7 +12,7 @@ const STATUTS_SEANCE={'planifiée':'Planifiée','réalisée':'Réalisée','annul
 const TYPES_COMPETITION=['Championnat','Coupe','Tournoi','Amical'];
 const TYPES_POST=['Actualité','Annonce','Événement','Performance'];
 const NOM_PUBLIC={aucun:'Aucun nom affiché',prenom_initiale:'Prénom + initiale (ex. Awa D.)',complet:'Prénom et nom'};
-const MODES_CONSENTEMENT={papier:'Formulaire papier signé',oral:'Accord oral',whatsapp:'Message WhatsApp',autre:'Autre'};
+const MODES_CONSENTEMENT={papier:'Formulaire papier signé',oral:'Accord oral',whatsapp:'Message WhatsApp',autre:'Autre',responsable:'Décision du responsable de l’académie'};
 const MOTIFS_SIGNALEMENT=['Mineur exposé','Contenu inapproprié','Fausse information','Autre'];
 const telRe=/^\+?[0-9 ()-]{6,24}$/,couleurRe=/^#[0-9a-f]{6}$/,uuidRe=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const STATUT_EXPLIQUE={
