@@ -30,7 +30,13 @@ const disponibilites=Object.freeze({produits:['Disponible','Épuisé','Masqué']
 const tarifs=Object.freeze(['fixe','devis']);
 const maxPhotos=5;
 // Suggestions de saisie (le serveur accepte un texte libre de 1 à 100 caractères).
-const categoriesCommerce=Object.freeze(['Alimentation','Boutique et quincaillerie','Vêtements et tissus','Beauté et coiffure','Téléphonie et électronique','Maison','Agriculture et élevage','Restauration','Santé et pharmacie','Autre']);
+// Restaurants & Traiteurs (cahier des charges v1.0, novembre 2026) : vue du catalogue existant, sans table ni statut nouveaux.
+// « Restauration » : ancienne catégorie unique, toujours reconnue pour les fiches existantes (aucune donnée réécrite).
+const categoriesRestauration=Object.freeze(['Restaurants','Traiteurs','Fast-food et restauration rapide','Pâtisseries','Boulangeries','Vente de boissons']);
+const categoriesMenu=Object.freeze(['Petit-déjeuner','Déjeuner','Dîner','Plats traditionnels','Grillades','Boissons','Desserts','Menus spéciaux','Prestations événementielles']);
+const typesPrestations=Object.freeze(['Mariages','Baptêmes','Cérémonies religieuses','Anniversaires','Réceptions','Séminaires','Repas sur commande']);
+function estRestauration(categorie){const c=String(categorie??'').trim();return c==='Restauration'||categoriesRestauration.includes(c);}
+const categoriesCommerce=Object.freeze(['Alimentation','Boutique et quincaillerie','Vêtements et tissus','Beauté et coiffure','Téléphonie et électronique','Maison','Agriculture et élevage',...categoriesRestauration,'Santé et pharmacie','Autre']);
 const metiers=Object.freeze(['Plomberie','Électricité','Maçonnerie','Menuiserie','Couture','Mécanique','Coiffure','Transport et livraison','Informatique','Cours et formation','Autre']);
 // Liste de secours ; la liste de référence est la table koki_localites (modifiable dans l'admin).
 // Source : OpenStreetMap (assets/koki-carte.json), type village/quartier à confirmer.
@@ -57,6 +63,15 @@ function messageCommande({produit,prix,boutique,quantite=1}){
  return 'Bonjour'+(boutique?' '+String(boutique).trim():'')+', je souhaite commander via Koki Connect :\n- '+String(produit||'').trim()+' × '+q+(Number.isInteger(prix)?' — '+formaterPrix(prix)+(q>1?' l’unité':''):'')+'\nEst-il disponible ?';
 }
 function lienCommandeWhatsApp(telephone,commande){return lienWhatsApp(telephone,messageCommande(commande));}
+// Restauration : message du cahier des charges. Le client peut le modifier dans WhatsApp avant l'envoi ;
+// rien n'est confirmé ni payé automatiquement : le professionnel confirme lui-même disponibilité et modalités.
+function messageCommandeRestauration({produit,prix,boutique,quantite=1}){
+ const q=Number.isInteger(quantite)&&quantite>0?quantite:1;
+ return 'Bonjour'+(boutique?' '+String(boutique).trim():'')+',\n\nJe souhaite passer une commande depuis KOKI CONNECT.\n\nProduit : '+String(produit||'').trim()+(Number.isInteger(prix)?'\nPrix : '+formaterPrix(prix):'')+'\nQuantité : '+q+'\n\nMerci de me confirmer la disponibilité et les modalités de commande.';
+}
+function messageDevisRestauration({prestation,professionnel}){
+ return 'Bonjour'+(professionnel?' '+String(professionnel).trim():'')+',\n\nJe souhaite demander un devis depuis KOKI CONNECT.\n\nPrestation : '+String(prestation||'').trim()+'\nDate de l’événement : \nNombre de personnes : \nLieu : \n\nMerci de me communiquer votre tarif et vos conditions.';
+}
 // Même clé que l'index anti-doublon du serveur : minuscules, espaces réduits.
 function cleNom(nom){return String(nom??'').trim().replace(/\s+/g,' ').toLowerCase();}
 function transition(kind,statut,decision){const d=decisions[kind]?.[decision];return d&&d.from.includes(statut)?d.to:null;}
@@ -104,7 +119,7 @@ function verifierOffre(kind,v){
  if(v?.whatsapp&&!normaliserTelephone(v.whatsapp))e.push('Numéro WhatsApp invalide.');
  return e;
 }
-root.KokiCommerceContract=Object.freeze({version,parents,statuts,publics,enValidation,decisions,libellesDecision,disponibilites,tarifs,maxPhotos,categoriesCommerce,metiers,localitesParDefaut,
+root.KokiCommerceContract=Object.freeze({version,parents,statuts,publics,enValidation,decisions,libellesDecision,disponibilites,tarifs,maxPhotos,categoriesCommerce,metiers,localitesParDefaut,categoriesRestauration,categoriesMenu,typesPrestations,estRestauration,messageCommandeRestauration,messageDevisRestauration,
  normaliserTelephone,afficherTelephone,lienAppel,lienWhatsApp,formaterPrix,libellePrix,messageCommande,lienCommandeWhatsApp,cleNom,transition,decisionsPossibles,estPublic,explicationStatut,verifierOffre,champsSensibles,comparerModification,libellesDemande});
 if(typeof module!=='undefined'&&module.exports)module.exports=root.KokiCommerceContract;
 })(globalThis);
