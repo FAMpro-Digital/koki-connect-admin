@@ -96,7 +96,7 @@ jobs:
           echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-17 >/dev/null
-          sudo pg_ctlcluster 17 main start
+          sudo pg_createcluster 17 main --start >/dev/null
           port=$(pg_lsclusters -h | awk '$1==17{print $3}')
           echo "PGPORT=$port" >> "$GITHUB_ENV"
           sudo -u postgres psql -p "$port" -c "create role $(id -un) superuser login" >/dev/null
@@ -138,10 +138,11 @@ jobs:
           node-version: '24'
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
-      - name: Install Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
+      - name: Install Supabase CLI (npm package, major version 2, outside the project)
+        run: |
+          npm install --prefix "$RUNNER_TEMP/supabase-cli" --no-audit --no-fund supabase@2 >/dev/null
+          echo "$RUNNER_TEMP/supabase-cli/node_modules/.bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/supabase-cli/node_modules/.bin/supabase" --version
       - name: Start ephemeral local Supabase, replay production structure, apply Football migrations, create test accounts
         env:
           KOKI_ESSAI_ENV: ${{ runner.temp }}/koki-essai.env
@@ -160,6 +161,17 @@ jobs:
         run: |
           set -a; . "$RUNNER_TEMP/koki-essai.env"; set +a
           node supabase/historique/outils/foot-reel/realtime-reel.mjs
+      - name: Private channel proposal — applied on the EPHEMERAL stack only, then tested
+        if: always()
+        env:
+          KOKI_ESSAI_RAPPORT: ${{ runner.temp }}/rapport-realtime-prive.json
+          KOKI_PUBLIC_DIR: ${{ github.workspace }}/koki-connect-public
+        run: |
+          psql postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres -X -q -v ON_ERROR_STOP=1 -f supabase/historique/propositions/20261201000700_foot_canal_prive.sql
+          set -a; . "$RUNNER_TEMP/koki-essai.env"; set +a
+          node supabase/historique/outils/foot-reel/realtime-prive.mjs
+          psql postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres -X -q -v ON_ERROR_STOP=1 -f supabase/historique/propositions/retour-20261201000700_foot_canal_prive.sql
+          echo "retour arrière de la proposition : ok"
       - name: Redacted reports
         if: always()
         run: |
