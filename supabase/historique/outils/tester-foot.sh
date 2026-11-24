@@ -6,7 +6,9 @@
 #  3. exécute supabase/tests/foot.sql (permissions, scores, Realtime, imports, verrous, conflits…) puis
 #     les tests de concurrence réelle (tester-foot-concurrence.sh : deux sessions simultanées) ;
 #  4. retours arrière : la structure redevient IDENTIQUE à la production actuelle ;
-#  5. réapplique les migrations.
+#  5. réapplique les migrations ;
+#  6. prouve qu'aucun objet existant n'est modifié (seuls des objets Football sont ajoutés) ;
+#  7. simule des échecs partiels : aucune application partielle.
 # Ne se connecte JAMAIS à Supabase : refuse tout hôte non local.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
@@ -53,5 +55,10 @@ python3 $H/outils/comparer.py $H/reference/empreinte-production-2026-11-20.txt "
 
 echo "── 5. Réapplication après retour"
 for f in $M; do psql -q -d $B -v ON_ERROR_STOP=1 -f "$f" >/dev/null && echo "ok      $f"; done
+echo "── 6. Objets existants inchangés (empreinte de production du 20/11/2026 contre état après migrations)"
+psql -Atq -d $B -f $H/outils/empreinte.sql > "${TMPDIR:-/tmp}/empreinte-foot-apres.txt"
+python3 $H/outils/comparer-ajouts.py $H/reference/empreinte-production-2026-11-20.txt "${TMPDIR:-/tmp}/empreinte-foot-apres.txt"
 psql -q -d postgres -c "drop database $B" >/dev/null
+echo "── 7. Échec partiel d'une migration : rien n'est appliqué"
+bash $H/outils/tester-foot-echec-partiel.sh | tail -1
 echo "TERMINÉ : module Football vérifié en local."

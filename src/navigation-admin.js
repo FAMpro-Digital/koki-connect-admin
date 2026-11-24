@@ -4,12 +4,16 @@
 
 // Sous-rubriques d'une rubrique : ses renseignements (présentation, responsable), ses écrans dédiés, ses publications (Opportunités et Événements : écran dédié seulement) et leurs sous-catégories, puis les lieux
 // et numéros utiles qu'elle affiche dans l'application publique.
+// Modules optionnels ajoutés à une rubrique, désactivés par défaut (football : VITE_KOKI_FOOT_ADMIN, réglé par app.js).
+let modules={football:false};
+export function activerModules(o={}){modules={...modules,football:o.football===true};}
 export function sousEntrees(R,r){
  if(!r)return [];
  const out=[];const deja=new Set();const ajoute=(cle,libelle,query='')=>{const id=cle+'|'+query;if(deja.has(id))return;deja.add(id);out.push({cle,libelle,query});};
  if(!r.type&&!r.ecrans.length)ajoute('rubrique:'+r.cle,'🧭 Vue d’ensemble');
  ajoute('renseignements','🪪 Renseignements',r.cle);
  for(const [k,label]of r.ecrans)ajoute(k,label);
+ if(r.cle==='sports'&&modules.football)ajoute('football','⚽ Football (scores en direct)');
  if(r.type&&r.type!=='Opportunités'&&r.type!=='Événements'){ajoute('contenus:'+r.type,'📰 Publications');for(const x of R.sousRubriques[r.type]||[])ajoute('contenus:'+r.type+':'+x.nom,x.icone+' '+x.nom);}
  if(r.type==='Opportunités')for(const x of R.sousRubriques[r.type]||[])ajoute('offres',x.icone+' '+x.nom,x.nom);
  if(r.lieux&&r.lieux!=='Santé')ajoute('lieux','📍 Lieux de la carte',r.lieux);

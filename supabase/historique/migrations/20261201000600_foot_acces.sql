@@ -686,9 +686,14 @@ begin
 
  elsif command='empreinte_journal' then
   -- Ancrage externe : dernière empreinte du journal des corrections et résultat de la vérification complète.
-  perform koki_foot.cles(input,'{fournisseur,operation}');
+  -- controle_id (facultatif) : identifiant de la dernière ligne du reçu précédent ; son empreinte ACTUELLE est
+  -- renvoyée pour prouver hors de la base que la chaîne n'a été ni tronquée ni réécrite depuis ce reçu.
+  perform koki_foot.cles(input,'{fournisseur,operation,controle_id}');
   return (select jsonb_build_object('dernier_id',c.id,'empreinte',c.empreinte,'lignes',(select count(*) from koki_foot.corrections),
-   'premiere_alteration',koki_foot.verifier_journal(),'lu_le',now()) from (select id,empreinte from koki_foot.corrections order by id desc limit 1) c
+   'premiere_alteration',koki_foot.verifier_journal(),'lu_le',now(),
+   'controle',case when input ? 'controle_id' then jsonb_build_object('id',koki_foot.i(input,'controle_id'),
+     'empreinte',(select k.empreinte from koki_foot.corrections k where k.id=koki_foot.i(input,'controle_id'))) end)
+   from (select id,empreinte from koki_foot.corrections order by id desc limit 1) c
    right join (select 1) x on true);
  elsif command<>'importer' then perform koki_foot.echec('Commande inconnue'); end if;
 

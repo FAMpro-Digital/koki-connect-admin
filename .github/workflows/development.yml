@@ -70,3 +70,11 @@ jobs:
           PGUSER: runner
           PGDATABASE: postgres
         run: bash supabase/historique/outils/verifier.sh
+      - name: Football module — SQL tests, concurrency, rollback, unchanged objects, partial failure (local database only)
+        env:
+          PGHOST: /var/run/postgresql
+          PGUSER: runner
+          PGDATABASE: postgres
+        run: bash supabase/historique/outils/tester-foot.sh
+      - name: Football module — admin client integration with local PostgreSQL
+        run: node --test tests/foot-admin-client.test.js

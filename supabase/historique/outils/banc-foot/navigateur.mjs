@@ -91,6 +91,21 @@ await cas('public · Realtime : score mis à jour sans rechargement ; message an
  vrai(/71/.test(await pub.locator('#koki-foot-direct .ft-accueil-ligne').first().textContent()),'minute non mise à jour');
  await capture(pub,'public-03-accueil-realtime');
 });
+await cas('public · sécurité Realtime : un faux message (score 9–9, révision énorme) n’impose rien ; la vraie mise à jour suivante passe',async()=>{
+ const id=sql("select id from koki_foot.matchs where lieu='Stade de Koki' and statut='En direct'");
+ const lu=()=>pub.locator('#koki-foot-direct .ft-accueil-ligne').first().textContent();
+ await pub.evaluate(id=>window.__realtime.emettre('match',{id,revision:999999,statut:'Terminé',minute:90,score_domicile:9,score_exterieur:9}),id);
+ await pub.waitForTimeout(2600);const t=await lu();
+ vrai(/2\s+–\s+0/.test(t)&&!/9\s+–\s+9/.test(t),'faux score affiché : '+t);
+ // Vrai but enregistré en base (révision réelle +1) puis diffusé : il doit s'afficher malgré la fausse révision.
+ sql(`update koki_foot.matchs set score_domicile=3, minute=72 where id='${id}'`);const rev=Number(sql(`select revision from koki_foot.matchs where id='${id}'`));
+ await pub.evaluate(([id,rev])=>window.__realtime.emettre('match',{id,revision:rev}),[id,rev]);
+ await pub.waitForFunction(()=>/3\s+–\s+0/.test(document.querySelector('#koki-foot-direct .ft-accueil-ligne')?.textContent||''),null,{timeout:5000});
+ sql(`update koki_foot.matchs set score_domicile=2, minute=71 where id='${id}'`);
+ await pub.evaluate(([id,rev])=>window.__realtime.emettre('match',{id,revision:rev+1}),[id,rev]);
+ await pub.waitForFunction(()=>/2\s+–\s+0/.test(document.querySelector('#koki-foot-direct .ft-accueil-ligne')?.textContent||''),null,{timeout:5000});
+ await capture(pub,'public-03b-faux-message-realtime');
+});
 await cas('public · Realtime : coupure → bandeau, reconnexion → état rechargé depuis le serveur',async()=>{
  await ouvrirSport(pub);await pub.evaluate(()=>window.__realtime.statut('CHANNEL_ERROR'));
  await pub.waitForSelector('.ft-hors-ligne');await capture(pub,'public-04-sport-coupure-realtime');

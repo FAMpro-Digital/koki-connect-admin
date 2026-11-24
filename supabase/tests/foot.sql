@@ -792,6 +792,14 @@ set role service_role; select t.as_service();
 select t.sync('empreinte_journal','{"fournisseur":"api-football"}') as ancre \gset
 reset role;
 select t.ok((:'ancre'::jsonb->>'empreinte')=(select empreinte from koki_foot.corrections order by id desc limit 1) and (:'ancre'::jsonb->>'dernier_id')::bigint=(select max(id) from koki_foot.corrections),'empreinte du journal : dernière ligne');
+select min(id) as premier_id from koki_foot.corrections \gset
+set role service_role; select t.as_service();
+select t.sync('empreinte_journal',jsonb_build_object('fournisseur','api-football','controle_id',:premier_id)) as ctl \gset
+select t.sync('empreinte_journal','{"fournisseur":"api-football","controle_id":-1}') as ctl_absent \gset
+reset role;
+select t.ok((:'ctl'::jsonb->'controle'->>'empreinte')=(select empreinte from koki_foot.corrections order by id limit 1),'ancrage : empreinte actuelle de la ligne de contrôle (continuité vérifiable hors base)');
+select t.ok((:'ctl_absent'::jsonb->'controle'->'empreinte')='null'::jsonb,'ancrage : ligne de contrôle disparue => empreinte nulle (troncature détectable)');
+select t.ok(:'ancre'::jsonb->'controle' is null or (:'ancre'::jsonb->'controle')='null'::jsonb,'ancrage sans contrôle demandé : champ vide');
 set role authenticated; select t.as_user(:'super','aal2');
 select t.err($$select public.koki_foot_sync('empreinte_journal','{"fournisseur":"api-football"}')$$,'permission denied','empreinte : réservée à la clé serveur');
 reset role;
