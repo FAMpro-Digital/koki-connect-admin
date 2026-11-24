@@ -1,8 +1,8 @@
 # Module Football — essais réels d'authentification et de Realtime
 
-Statut : **protocoles et scripts prêts, NON EXÉCUTÉS.** L'environnement de travail n'a ni projet
-Supabase d'essai joignable, ni Supabase local (Docker sans service, réseau sortant bloqué). Les rôles
-simulés du banc d'essai ne remplacent pas ces essais : ils restent à faire avant toute mise en service.
+Statut (phase 6) : **exécutés et réussis sur un Supabase local éphémère** (job CI `foot-essais-reels`,
+résultats dans `football-phase6.md`). Restent à faire : les mêmes scripts sur un projet d'essai hébergé
+(sur autorisation) et le protocole manuel avec deux téléphones.
 
 ## 1. Environnement requis
 

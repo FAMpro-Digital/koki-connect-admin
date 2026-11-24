@@ -17,7 +17,7 @@ au projet `qsbmzzbiztfqysstepxm`.
 | Échec partiel | instruction cassée injectée à 10 endroits (début, 1/4, 1/2, 3/4, avant `commit`) : **rien n'est appliqué**, structure identique, puis la migration intacte passe | `tester-foot-echec-partiel.sh` |
 | Retour arrière | `retour/0600` puis `retour/0500` : structure redevenue identique à la production (560/0) ; `0500` refuse de détruire des données sans `koki.retour_force=oui` | `tester-foot.sh` §4 |
 | Réapplication | après retour, les migrations s'appliquent de nouveau | `tester-foot.sh` §5 |
-| Version | migrations écrites pour PostgreSQL 17 (production) ; essais locaux sous 16 | — |
+| Version | PostgreSQL 17 : mêmes résultats qu'en 16 (242/242, 560/560, 10/10 échecs partiels) | job CI `historique-sql-pg17` (17.12) ; pile Supabase locale (17.11) |
 
 Limite : l'empreinte suit les schémas `public`, `koki_private`, `koki_social_private` ; l'intérieur de
 `koki_foot` est couvert par `foot.sql`, et l'absence d'effet sur `auth`/`storage`/`realtime` par la revue.
@@ -64,9 +64,10 @@ contrôle ensuite (560/0 attendu). Les autres modules ne sont pas touchés.
     le 21/11) ; préversions actives ;
   - branche `feature/module-football` : **0 déploiement** dans les deux dépôts (`vercel.json ›
     git.deploymentEnabled` la bloque) ; aucun statut Vercel sur les commits des PR #63 et #144.
-- **Risque** : `main` n'est **protégée** dans aucun des deux dépôts ; une fusion ou une poussée directe
-  déclenche un déploiement de production automatique. Recommandation : protection de `main` (PR et
-  vérifications obligatoires).
+- **Correction (phase 6)** : `koki-connect` (site public) est protégé par un ruleset actif (PR et
+  contrôles `verify`, `e2e`, `lint` obligatoires, poussée forcée et suppression interdites). Seul
+  `koki-connect-admin` n'a **aucune** protection : une poussée directe sur `main` y déclenche un déploiement
+  de production. Proposition : `docs/protection-branches/`.
 - À vérifier par le propriétaire : `VITE_KOKI_FOOT_ADMIN` absent en Production ; variables sensibles
   marquées « Sensitive » ; « Preview » sans clé `service_role`.
 
@@ -90,4 +91,4 @@ le logo est absent. Demande : bucket, quota de stockage et droits d'usage des lo
 6. `VITE_KOKI_FOOT_ADMIN=true` (admin) puis `modules.football=true` (site public).
 7. Abonnement éventuel à un fournisseur (API-Football) et dépôt de la clé en variable d'environnement.
 8. Création du dépôt d'ancrage, de ses secrets et du workflow quotidien ; choix du service de courriel.
-9. Protection de la branche `main` des deux dépôts.
+9. Protection de la branche `main` de `koki-connect-admin` et compléments du ruleset de `koki-connect`.
