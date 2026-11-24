@@ -19,7 +19,8 @@ async function connecter(nom,{mfa=true}={}){
 }
 const admin=(db,command,input={})=>db.rpc('koki_foot_admin',{command,input});
 const lire=async db=>{const r=await admin(db,'etat',{});if(r.error)throw Error(r.error.message);const m=r.data.matchs.find(x=>x.id===MATCH);vrai(m,'match d’essai introuvable');return m;};
-const refuse=r=>!!r.error;
+// Refus attendu = refus de DROITS (42501), pas une autre erreur (commande inconnue, paramètre…).
+const refuse=r=>!!r.error&&r.error.code==='42501';
 const code=r=>r.error?`refus ${r.error.code||'?'} « ${r.error.message} »`:'accepté';
 
 // Jeton destiné au cas « session expirée » : obtenu dès le début (durée de vie du projet d'essai : 60 s).
@@ -27,7 +28,7 @@ const pourExpiration=await connecter('editeur').catch(()=>null);
 
 await R.cas('éditeur aal2 : lecture et écriture via RPC ; tables privées inaccessibles','aal2 ; lecture et écriture acceptées puis retour à l’état initial ; accès direct aux tables refusé',async preuve=>{
  const s=await connecter('editeur');if(!s)return 'non_execute';preuve('aal',s.aal,'· amr',(jwt(s.jeton).amr||[]).map(x=>x.method).join('+'));vrai(s.aal==='aal2','niveau '+s.aal);
- const l=await admin(s.db,'matchs',{});preuve('lecture :',code(l));vrai(!l.error,'lecture refusée');
+ const l=await admin(s.db,'etat',{});preuve('lecture :',code(l));vrai(!l.error,'lecture refusée');
  if(MATCH){const m=await lire(s.db);
   const r1=await admin(s.db,'score',{id:MATCH,revision:m.revision,score_domicile:(m.score_domicile??0)+1,motif:'essai auth réelle'});preuve('écriture :',code(r1),'révision',m.revision,'→',r1.data?.revision);vrai(!r1.error,'écriture refusée');
   const r2=await admin(s.db,'score',{id:MATCH,revision:r1.data.revision,score_domicile:m.score_domicile??0,motif:'essai auth réelle : retour'});vrai(!r2.error,r2.error?.message);}
@@ -41,33 +42,35 @@ await R.cas('superadmin aal2 : opération réservée acceptée','aal2 ; verifier
 });
 await R.cas('éditeur aal2 : opération réservée au superadmin refusée','regler_verrous refusé',async preuve=>{
  const s=await connecter('editeur');if(!s)return 'non_execute';
- const r=await admin(s.db,'regler_verrous',{mode:'independant'});preuve('regler_verrous :',code(r));vrai(r.error,'réglage superadmin accepté pour un éditeur');
+ const r=await admin(s.db,'regler_verrous',{mode:'independant'});preuve('regler_verrous :',code(r));vrai(refuse(r),'réglage superadmin non refusé pour droits');
  return 'refusé';
 });
 await R.cas('session aal1 (sans MFA) : lecture et écriture refusées','aal1 ; refus « double authentification requise »',async preuve=>{
  const s=await connecter('sansmfa',{mfa:false})||await connecter('editeur',{mfa:false});if(!s)return 'non_execute';preuve('aal',s.aal);vrai(s.aal==='aal1','niveau '+s.aal);
- const l=await admin(s.db,'matchs',{});preuve('lecture :',code(l));vrai(refuse(l),'lecture acceptée sans MFA');
+ const l=await admin(s.db,'etat',{});preuve('lecture :',code(l));vrai(refuse(l),'lecture acceptée sans MFA');
  if(MATCH){const w=await admin(s.db,'score',{id:MATCH,revision:1,score_domicile:9});preuve('écriture :',code(w));vrai(refuse(w),'écriture acceptée sans MFA');}
  return 'refusé';
 });
 await R.cas('utilisateur authentifié sans droits : refusé','lecture et écriture refusées',async preuve=>{
  const s=await connecter('sansdroit');if(!s)return 'non_execute';preuve('aal',s.aal);
- const l=await admin(s.db,'matchs',{});preuve('lecture :',code(l));vrai(refuse(l),'lecture admin accordée');
+ const l=await admin(s.db,'etat',{});preuve('lecture :',code(l));vrai(refuse(l),'lecture admin accordée');
  if(MATCH){const w=await admin(s.db,'score',{id:MATCH,revision:1,score_domicile:9});preuve('écriture :',code(w));vrai(refuse(w),'écriture accordée');}
  return 'refusé';
 });
 await R.cas('anonyme (clé publique) : admin et synchronisation refusées ; lecture publique permise','admin refusé, sync refusée, accueil public lisible',async preuve=>{
- const db=nouveau();const a=await admin(db,'matchs',{});preuve('admin :',code(a));vrai(a.error,'admin anonyme accepté');
- const s=await db.rpc('koki_foot_sync',{command:'importer',input:{}});preuve('sync :',code(s));vrai(s.error,'synchronisation anonyme acceptée');
+ const db=nouveau();const a=await admin(db,'etat',{});preuve('admin :',code(a));vrai(refuse(a),'admin anonyme non refusé pour droits');
+ const s=await db.rpc('koki_foot_sync',{command:'importer',input:{}});preuve('sync :',code(s));vrai(refuse(s),'synchronisation anonyme non refusée pour droits');
  const p=await db.rpc('koki_foot_public',{command:'accueil',input:{}});preuve('public :',code(p));vrai(!p.error,p.error?.message);
  return 'conforme';
 });
 await R.cas('session expirée : vrai jeton périmé refusé par le serveur','refus après expiration (exp dépassé)',async preuve=>{
  const jeton=process.env.KOKI_ESSAI_JETON_EXPIRE||pourExpiration?.jeton;if(!jeton)return 'non_execute';
- const exp=jwt(jeton).exp*1000;const attente=exp-Date.now()+5000;
- if(attente>0){if(attente>120000)return 'non_execute';preuve('attente',Math.round(attente/1000),'s jusqu’à expiration');await new Promise(r=>setTimeout(r,attente));}
+ // PostgREST tolère un décalage d'horloge de 30 s : l'essai attend exp + 40 s.
+ const exp=jwt(jeton).exp*1000;const attente=exp-Date.now()+40000;
+ if(attente>0){if(attente>150000)return 'non_execute';preuve('attente',Math.round(attente/1000),'s (exp + 40 s)');await new Promise(r=>setTimeout(r,attente));}
  const db=nouveau({global:{headers:{Authorization:'Bearer '+jeton}}});
- const r=await admin(db,'matchs',{});preuve('après expiration :',code(r));vrai(r.error,'jeton expiré accepté');
+ const r=await admin(db,'etat',{});preuve('après expiration :',code(r));
+ vrai(r.error&&/expired|expir|PGRST30/i.test((r.error.code||'')+' '+r.error.message),'jeton expiré non refusé comme tel');
  return 'refusé';
 });
 await R.cas('interruption pendant une écriture : erreur propre, aucune écriture partielle','erreur côté client ; en base soit rien, soit l’écriture complète',async preuve=>{

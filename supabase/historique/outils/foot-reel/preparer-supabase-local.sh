@@ -35,7 +35,7 @@ while read -r f; do [ -z "$f" ] && continue
   if ! sortie=$(psql "$ADMIN_DB" -v ON_ERROR_STOP=1 -X -q -f "$RACINE/$f" 2>&1 >/dev/null); then echo "ÉCHEC $f"; echo "$sortie" | grep -E "ERROR|ERREUR" | head -3; exit 1; fi
 done < "$H/reference/ordre.txt"
 psql "$ADMIN_DB" -Atq -X -f "$H/outils/empreinte.sql" > "$SORTIE.avant"
-python3 "$H/outils/comparer.py" "$H/reference/empreinte-production-2026-11-20.txt" "$SORTIE.avant" | tail -15 || echo "(écarts listés ci-dessus : plateforme Supabase locale contre production)"
+python3 "$H/outils/comparer.py" "$H/reference/empreinte-production-2026-11-20.txt" "$SORTIE.avant" || echo "(écarts listés ci-dessus : plateforme Supabase locale contre production)"
 
 echo "── 3. Migrations Football"
 for f in 20261201000500_foot_schema 20261201000600_foot_acces; do psql "$ADMIN_DB" -v ON_ERROR_STOP=1 -X -q -f "$H/migrations/$f.sql" >/dev/null && echo "ok      $f"; done
