@@ -10,7 +10,7 @@
 # Garde-fou : uniquement 127.0.0.1 ; refuse toute exécution si un lien vers un projet distant existe.
 set -euo pipefail
 ICI="$(cd "$(dirname "$0")" && pwd)"; RACINE="$(cd "$ICI/../../../.." && pwd)"; H="$RACINE/supabase/historique"
-SORTIE="${KOKI_ESSAI_ENV:?Indiquer KOKI_ESSAI_ENV (fichier des variables d'essai, hors du dépôt)}"
+SORTIE="${KOKI_ESSAI_ENV:-}"; [ -n "$SORTIE" ] || { echo "Indiquer KOKI_ESSAI_ENV (fichier des variables d'essai, hors du dépôt)" >&2; exit 2; }
 case "$SORTIE" in "$RACINE"/*) echo "REFUS : le fichier des variables doit être hors du dépôt." >&2; exit 2;; esac
 [ -e "$ICI/supabase/.temp/project-ref" ] && { echo "REFUS : ce dossier est lié à un projet distant." >&2; exit 2; }
 DB="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
