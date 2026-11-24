@@ -1,7 +1,0 @@
-{
-  "_note": "Compléments proposés au ruleset EXISTANT 25622289 « Protection main - KOKI CONNECT » (site public). Règles à AJOUTER ; les règles actuelles (deletion, non_fast_forward, pull_request, required_status_checks verify/e2e/lint strict) sont conservées.",
-  "ajouts": [
-    {"type": "required_linear_history"},
-    {"type": "pull_request", "parameters_modifies": {"allowed_merge_methods": ["squash"], "dismiss_stale_reviews_on_push": true, "required_review_thread_resolution": true}}
-  ]
-}
