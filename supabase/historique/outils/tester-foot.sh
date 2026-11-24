@@ -3,7 +3,8 @@
 # sur une base LOCALE :
 #  1. rejoue la référence de production (verifier.sh : empreinte du 20/11/2026, 0 écart attendu) ;
 #  2. applique les migrations, puis vérifie que chaque garde bloque une seconde application ;
-#  3. exécute supabase/tests/foot.sql (permissions, programmation, scores, Realtime, imports, verrou…) ;
+#  3. exécute supabase/tests/foot.sql (permissions, scores, Realtime, imports, verrous, conflits…) puis
+#     les tests de concurrence réelle (tester-foot-concurrence.sh : deux sessions simultanées) ;
 #  4. retours arrière : la structure redevient IDENTIQUE à la production actuelle ;
 #  5. réapplique les migrations.
 # Ne se connecte JAMAIS à Supabase : refuse tout hôte non local.
@@ -36,6 +37,7 @@ done
 
 echo "── 3. Tests fonctionnels et de sécurité"
 psql -d $B -v ON_ERROR_STOP=1 -f supabase/tests/foot.sql 2>&1 | grep -E "Tests réussis|ÉCHEC|ERROR|ERREUR" || { echo "ÉCHEC des tests"; exit 1; }
+bash $H/outils/tester-foot-concurrence.sh $B
 psql -d $B -Atc "select 'conseil  '||count(*)||' table(s) koki_foot sans RLS' from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='koki_foot' and c.relkind='r' and not c.relrowsecurity"
 psql -d $B -Atc "select 'conseil  '||count(*)||' droit(s) direct(s) anon/authenticated sur koki_foot' from information_schema.role_table_grants where table_schema='koki_foot' and grantee in ('anon','authenticated','PUBLIC')"
 

@@ -9,8 +9,13 @@
 --    Les modules « Sports & ASC » (koki_contents) et Clubs & Académies (koki_sport) restent intacts ;
 --  * deux sources : « manuel » (saisie des administrateurs) et « api » (fournisseur externe).
 --    Une ligne api est identifiée par (fournisseur, ref_fournisseur) : un import ne crée jamais de doublon ;
---  * protection des corrections : la synchronisation ne modifie jamais une ligne manuelle, ni le score
---    ou le statut d'un match api verrouillé (verrou_manuel) après une correction d'un administrateur ;
+--  * protection des corrections : la synchronisation ne modifie jamais une ligne manuelle. Sur un match api,
+--    une correction pose un verrou : verrou_manuel (global, comportement actuel) et, en préparation de
+--    l'évolution, des verrous indépendants verrou_score / verrou_statut / verrou_evenements / verrou_programmation.
+--    Une divergence entre l'API et une valeur verrouillée n'est jamais ignorée en silence : elle est inscrite
+--    dans koki_foot.conflits jusqu'à décision d'un administrateur ;
+--  * scores distincts : réglementaire (score_*), buts de prolongation (pro_*), tirs au but (tab_*) ;
+--  * fraîcheur : source du résultat, date de dernière synchronisation par match, état de chaque fournisseur ;
 --  * journal : koki_private.audit() (révision et statut) + koki_foot.corrections (avant/après, auteur,
 --    motif), en ajout seul : aucune correction ne peut être modifiée ni effacée.
 
@@ -100,17 +105,30 @@ create table koki_foot.matchs(
  lieu text not null default '' check (length(lieu)<=120),
  poule text not null default '' check (length(poule)<=40),
  journee text not null default '' check (length(journee)<=40),
- statut text not null default 'À venir' check (statut in ('À venir','En direct','Mi-temps','Terminé','Reporté','Annulé','Interrompu')),
+ statut text not null default 'À venir' check (statut in ('À venir','En direct','Mi-temps','Prolongations','Tirs au but','Terminé','Reporté','Annulé','Interrompu','Suspendu')),
  minute integer check (minute is null or minute between 0 and 150),
+ -- Score réglementaire (temps réglementaire seulement).
  score_domicile integer check (score_domicile is null or score_domicile between 0 and 99),
  score_exterieur integer check (score_exterieur is null or score_exterieur between 0 and 99),
+ -- Buts marqués pendant la prolongation (en plus du score réglementaire).
+ pro_domicile integer check (pro_domicile is null or pro_domicile between 0 and 99),
+ pro_exterieur integer check (pro_exterieur is null or pro_exterieur between 0 and 99),
+ -- Séance de tirs au but.
  tab_domicile integer check (tab_domicile is null or tab_domicile between 0 and 99),
  tab_exterieur integer check (tab_exterieur is null or tab_exterieur between 0 and 99),
+ -- Forfait : équipe forfait (résultat officiel saisi dans le score) ; match rejoué : lien vers le match d'origine.
+ forfait_equipe_id uuid references koki_foot.equipes(id) on delete restrict,
+ rejoue_de uuid references koki_foot.matchs(id) on delete set null,
  commentaire text not null default '' check (length(commentaire)<=500),
  source text not null default 'manuel' check (source in ('manuel','api')),
  fournisseur text check (fournisseur in ('api-football','sportmonks')),
  ref_fournisseur text check (ref_fournisseur is null or length(ref_fournisseur) between 1 and 64),
  verrou_manuel boolean not null default false,
+ verrou_score boolean not null default false,
+ verrou_statut boolean not null default false,
+ verrou_evenements boolean not null default false,
+ verrou_programmation boolean not null default false,
+ resultat_source text not null default 'manuel' check (resultat_source in ('manuel','api','correction')),
  verrouille_par uuid references auth.users(id) on delete set null,
  verrouille_le timestamptz,
  synchronise_le timestamptz,
@@ -121,15 +139,22 @@ create table koki_foot.matchs(
  check (domicile_id<>exterieur_id),
  check ((score_domicile is null)=(score_exterieur is null)),
  check ((tab_domicile is null)=(tab_exterieur is null)),
- check (statut not in ('Terminé','En direct','Mi-temps','Interrompu') or score_domicile is not null),
- check (statut in ('En direct','Mi-temps','Interrompu') or minute is null),
+ check ((pro_domicile is null)=(pro_exterieur is null)),
+ check (pro_domicile is null or score_domicile is not null),
+ check (tab_domicile is null or score_domicile is not null),
+ check (statut not in ('Terminé','En direct','Mi-temps','Prolongations','Tirs au but','Interrompu') or score_domicile is not null),
+ check (statut in ('En direct','Mi-temps','Prolongations','Tirs au but','Interrompu') or minute is null),
+ check (forfait_equipe_id is null or (forfait_equipe_id in (domicile_id,exterieur_id) and statut='Terminé')),
+ check (rejoue_de is null or rejoue_de<>id),
  check ((source='manuel' and fournisseur is null and ref_fournisseur is null) or (source='api' and fournisseur is not null and ref_fournisseur is not null)),
- check (verrou_manuel=false or source='api'),
+ check (source='api' or not (verrou_manuel or verrou_score or verrou_statut or verrou_evenements or verrou_programmation)),
+ check (source='api' or resultat_source='manuel'),
  unique (fournisseur, ref_fournisseur)
 );
 create index matchs_date on koki_foot.matchs(date_match);
 create index matchs_competition on koki_foot.matchs(competition_id, date_match);
-create index matchs_direct on koki_foot.matchs(statut) where statut in ('En direct','Mi-temps');
+create index matchs_direct on koki_foot.matchs(statut) where statut in ('En direct','Mi-temps','Prolongations','Tirs au but','Interrompu');
+create index matchs_rejoue on koki_foot.matchs(rejoue_de) where rejoue_de is not null;
 create index matchs_domicile on koki_foot.matchs(domicile_id);
 create index matchs_exterieur on koki_foot.matchs(exterieur_id);
 
@@ -184,7 +209,7 @@ create table koki_foot.corrections(
  id bigint generated always as identity primary key,
  match_id uuid references koki_foot.matchs(id) on delete set null,
  acteur uuid references auth.users(id) on delete set null,
- action text not null check (action in ('score','statut','match','evenement_ajout','evenement_retrait','verrou','deverrou')),
+ action text not null check (action in ('score','statut','match','programmation','forfait','rejoue','evenement_ajout','evenement_retrait','verrou','deverrou','conflit_garde','conflit_api')),
  avant jsonb not null default '{}'::jsonb check (jsonb_typeof(avant)='object'),
  apres jsonb not null default '{}'::jsonb check (jsonb_typeof(apres)='object'),
  motif text not null default '' check (length(motif)<=300),
@@ -199,6 +224,39 @@ begin
  raise exception 'Journal des corrections : ajout seul' using errcode='42501';
 end $$;
 create trigger corrections_ajout_seul before update or delete on koki_foot.corrections for each row execute function koki_foot.corrections_ajout_seul();
+-- TRUNCATE contourne les déclencheurs de ligne : interdit aussi.
+create function koki_foot.corrections_sans_vidage() returns trigger language plpgsql set search_path='' as $$
+begin raise exception 'Journal des corrections : vidage interdit' using errcode='42501'; end $$;
+create trigger corrections_sans_vidage before truncate on koki_foot.corrections for each statement execute function koki_foot.corrections_sans_vidage();
+
+-- ───────────── Conflits API ↔ correction manuelle ─────────────
+-- Une valeur verrouillée que l'API voudrait changer : jamais écrasée, jamais ignorée en silence.
+create table koki_foot.conflits(
+ id bigint generated always as identity primary key,
+ match_id uuid not null references koki_foot.matchs(id) on delete cascade,
+ champ text not null check (champ in ('score','statut','evenements','programmation')),
+ valeur_locale jsonb not null,
+ valeur_api jsonb not null,
+ premier_vu timestamptz not null default now(),
+ dernier_vu timestamptz not null default now(),
+ occurrences integer not null default 1 check (occurrences>=1),
+ resolu boolean not null default false,
+ resolu_par uuid references auth.users(id) on delete set null,
+ resolu_le timestamptz,
+ decision text check (decision in ('garder','accepter_api'))
+);
+create unique index conflits_ouverts on koki_foot.conflits(match_id, champ) where not resolu;
+
+-- ───────────── État des fournisseurs (fraîcheur, pannes, quota) ─────────────
+create table koki_foot.etat_fournisseurs(
+ fournisseur text primary key check (fournisseur in ('api-football','sportmonks')),
+ derniere_reussite timestamptz,
+ derniere_erreur timestamptz,
+ derniere_erreur_code text check (derniere_erreur_code in ('indisponible','quota','authentification','donnees','delai','autre')),
+ erreurs_consecutives integer not null default 0 check (erreurs_consecutives>=0),
+ quota_restant integer check (quota_restant is null or quota_restant>=0),
+ pause_jusqu_a timestamptz
+);
 
 -- ───────────── Journal des synchronisations ─────────────
 create table koki_foot.synchronisations(
@@ -206,12 +264,20 @@ create table koki_foot.synchronisations(
  fournisseur text not null check (fournisseur in ('api-football','sportmonks')),
  operation text not null check (length(operation) between 1 and 60),
  statut text not null check (statut in ('ok','partiel','erreur')),
+ code text check (code in ('indisponible','quota','authentification','donnees','delai','autre')),
  lus integer not null default 0, crees integer not null default 0, mis_a_jour integer not null default 0,
  ignores_verrou integer not null default 0, rejetes integer not null default 0,
  message text not null default '' check (length(message)<=2000),
  created_at timestamptz not null default now()
 );
 create index synchronisations_date on koki_foot.synchronisations(created_at desc);
+
+-- Dernier passage de la synchronisation sur un match, même sans changement (fraîcheur), séparé de la table
+-- matchs pour ne pas créer une révision et une ligne d'audit à chaque passage.
+create table koki_foot.vus_api(
+ match_id uuid primary key references koki_foot.matchs(id) on delete cascade,
+ vu_le timestamptz not null default now()
+);
 
 -- ───────────── Horodatage et journal (fonctions existantes) ─────────────
 create trigger competitions_stamp before insert or update on koki_foot.competitions for each row execute function koki_private.stamp();

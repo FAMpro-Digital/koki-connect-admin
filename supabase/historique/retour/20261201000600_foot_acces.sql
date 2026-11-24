@@ -6,9 +6,12 @@ drop function if exists public.koki_foot_admin(text,jsonb);
 drop function if exists public.koki_foot_sync(text,jsonb);
 drop trigger if exists matchs_diffusion on koki_foot.matchs;
 drop trigger if exists evenements_diffusion on koki_foot.evenements;
-drop function if exists koki_foot.match_diffuse(), koki_foot.evenement_diffuse(), koki_foot.diffuser(text,jsonb),
- koki_foot.appliquer_score(koki_foot.matchs,uuid,text,integer,integer,integer,integer,integer,text), koki_foot.corriger(uuid,uuid,text,jsonb,jsonb,text),
- koki_foot.classement(uuid,text), koki_foot.visible(koki_foot.matchs), koki_foot.evenement_json(koki_foot.evenements), koki_foot.match_json(koki_foot.matchs),
- koki_foot.equipe_json(koki_foot.equipes), koki_foot.exiger(text), koki_foot.revision(integer,integer), koki_foot.ts(jsonb,text), koki_foot.b(jsonb,text,boolean),
- koki_foot.i(jsonb,text), koki_foot.u(jsonb,text), koki_foot.t(jsonb,text), koki_foot.cles(jsonb,text[]), koki_foot.echec(text);
+-- Toutes les fonctions koki_foot créées par cette migration (celles de la migration 1/2 sont conservées).
+do $$ declare r record; begin
+ for r in select p.oid::regprocedure f from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+   where n.nspname='koki_foot' and p.proname not in ('texte_ok','url_ok','evenement_equipe','corrections_ajout_seul','corrections_sans_vidage')
+   order by p.proname desc loop
+  execute format('drop function if exists %s cascade', r.f);
+ end loop;
+end $$;
 commit;
