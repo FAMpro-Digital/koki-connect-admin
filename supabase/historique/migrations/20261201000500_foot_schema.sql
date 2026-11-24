@@ -301,6 +301,18 @@ create table koki_foot.etat_fournisseurs(
  attente_debut_s integer not null default 1800 check (attente_debut_s between 300 and 86400)
 );
 
+-- ───────────── Réglages du module (une seule ligne) ─────────────
+-- mode_verrous : « global » (lancement : une correction pose aussi verrou_manuel, qui protège tout le match)
+-- ou « independant » (chaque verrou ne protège que son champ ; verrou_manuel n'est plus posé, mais un
+-- verrou_manuel déjà posé reste respecté pour compatibilité). Passage réservé au superadmin.
+create table koki_foot.reglages(
+ id boolean primary key default true check (id),
+ mode_verrous text not null default 'global' check (mode_verrous in ('global','independant')),
+ modifie_le timestamptz not null default now(),
+ modifie_par uuid references auth.users(id) on delete set null
+);
+insert into koki_foot.reglages default values;
+
 -- ───────────── Programmation : historique et changements d'horaire ─────────────
 create table koki_foot.historique_programmation(
  id bigint generated always as identity primary key,
@@ -320,6 +332,8 @@ create table koki_foot.changements_horaire(
  ancienne timestamptz not null,
  nouvelle timestamptz not null,
  origine text not null check (origine in ('api','manuel')),
+ -- Priorité de notification (règles : docs/football-notifications.md) : aucune | facultative | normale | prioritaire.
+ priorite text not null default 'normale' check (priorite in ('aucune','facultative','normale','prioritaire')),
  created_at timestamptz not null default now(),
  traite_le timestamptz,
  unique (match_id, ancienne, nouvelle)

@@ -211,11 +211,24 @@ create trigger evenements_diffusion after insert or delete on koki_foot.evenemen
 -- ───────────── Changements d'horaire (file pour les notifications futures) ─────────────
 -- Match publié dont l'heure change (correction manuelle ou fournisseur) : inscrit une seule fois par
 -- couple (ancienne, nouvelle). Les rappels déjà programmés devront être recalculés à partir de cette file.
+-- Priorité d'un changement d'horaire (heure de Koki = Africa/Dakar) :
+--  report ou changement de jour => prioritaire ; match dans les 60 prochaines minutes => normale (même petit
+--  décalage) ; écart < 5 min => aucune ; 5 à 14 min => facultative ; 15 min ou plus => normale.
+create function koki_foot.priorite_horaire(ancienne timestamptz, nouvelle timestamptz, statut text, maintenant timestamptz)
+returns text language sql immutable set search_path='' as $$
+ select case
+  when statut='Reporté' or (ancienne at time zone 'Africa/Dakar')::date<>(nouvelle at time zone 'Africa/Dakar')::date then 'prioritaire'
+  when ancienne<>nouvelle and least(ancienne,nouvelle)-maintenant<=interval '60 minutes' and greatest(ancienne,nouvelle)>maintenant then 'normale'
+  when abs(extract(epoch from nouvelle-ancienne))<300 then 'aucune'
+  when abs(extract(epoch from nouvelle-ancienne))<900 then 'facultative'
+  else 'normale' end
+$$;
 create function koki_foot.horaire_change() returns trigger language plpgsql security definer set search_path='' as $$
 begin
  if new.date_match is distinct from old.date_match and koki_foot.visible(new) then
-  insert into koki_foot.changements_horaire(match_id,ancienne,nouvelle,origine)
-   values(new.id,old.date_match,new.date_match,case when current_setting('koki_foot.origine',true)='api' then 'api' else 'manuel' end)
+  insert into koki_foot.changements_horaire(match_id,ancienne,nouvelle,origine,priorite)
+   values(new.id,old.date_match,new.date_match,case when current_setting('koki_foot.origine',true)='api' then 'api' else 'manuel' end,
+    koki_foot.priorite_horaire(old.date_match,new.date_match,new.statut,now()))
   on conflict (match_id,ancienne,nouvelle) do nothing;
  end if;
  return null;
@@ -275,13 +288,15 @@ end $$;
 create function koki_foot.corriger(p_match uuid, p_acteur uuid, p_action text, p_avant jsonb, p_apres jsonb, p_motif text) returns void language sql security definer set search_path='' as
 $$ insert into koki_foot.corrections(match_id,acteur,action,avant,apres,motif) values(p_match,p_acteur,p_action,p_avant,p_apres,left(coalesce(p_motif,''),300)) $$;
 
--- Pose les verrous d'un match api après une correction (global + champs touchés).
+create function koki_foot.mode_verrous() returns text language sql stable set search_path='' as
+$$ select coalesce((select mode_verrous from koki_foot.reglages limit 1),'global') $$;
+-- Pose les verrous d'un match api après une correction : champs touchés, et verrou global en mode « global ».
 create function koki_foot.verrouiller(p_match uuid, a uuid, champs text[], p_motif text) returns koki_foot.matchs language plpgsql security definer set search_path='' as $$
 declare m koki_foot.matchs; avant jsonb; begin
  select * into m from koki_foot.matchs where id=p_match;
  if m.source<>'api' or cardinality(champs)=0 then return m; end if;
  avant:=koki_foot.verrous_json(m);
- update koki_foot.matchs set verrou_manuel=true,
+ update koki_foot.matchs set verrou_manuel=verrou_manuel or koki_foot.mode_verrous()='global',
   verrou_score=verrou_score or 'score'=any(champs), verrou_statut=verrou_statut or 'statut'=any(champs),
   verrou_evenements=verrou_evenements or 'evenements'=any(champs), verrou_programmation=verrou_programmation or 'programmation'=any(champs),
   resultat_source=case when 'score'=any(champs) or 'evenements'=any(champs) then 'correction' else resultat_source end,
@@ -362,6 +377,7 @@ declare a uuid; c koki_foot.competitions; e koki_foot.equipes; m koki_foot.match
      from koki_foot.matchs x where x.date_match>=coalesce(koki_foot.ts(input,'depuis'),now()-interval '30 days') and x.date_match<now()+interval '60 days'
       and (x.source='manuel' or koki_foot.en_jeu(x.statut) or exists(select 1 from koki_foot.competitions c2 where c2.id=x.competition_id and c2.publie))),'[]'),
    'conflits_ouverts',(select count(*) from koki_foot.conflits where not resolu),
+   'mode_verrous',koki_foot.mode_verrous(),
    'fournisseurs',coalesce((select jsonb_agg(to_jsonb(x)||jsonb_build_object('etat',koki_foot.etat_source(x))) from koki_foot.etat_fournisseurs x),'[]'),
    'changements_horaire_a_traiter',(select count(*) from koki_foot.changements_horaire where traite_le is null),
    'synchronisations',coalesce((select jsonb_agg(to_jsonb(y) order by y.created_at desc) from (select * from koki_foot.synchronisations order by created_at desc limit 20) y),'[]'));
@@ -392,8 +408,13 @@ declare a uuid; c koki_foot.competitions; e koki_foot.equipes; m koki_foot.match
   return koki_foot.classement(koki_foot.u(input,'competition_id'),koki_foot.t(input,'poule'));
  end if;
 
- -- ── Réglages des sources (superadmin seulement) ──
- if command='regler_source' then
+ -- ── Réglages (superadmin seulement) ──
+ if command='regler_verrous' then
+  a:=koki_foot.exiger('superadmin'); perform koki_foot.cles(input,'{mode}');
+  if koki_foot.t(input,'mode') is null or koki_foot.t(input,'mode') not in ('global','independant') then perform koki_foot.echec('Mode : global ou independant'); end if;
+  update koki_foot.reglages set mode_verrous=koki_foot.t(input,'mode'), modifie_le=now(), modifie_par=a;
+  return (select to_jsonb(r) from koki_foot.reglages r);
+ elsif command='regler_source' then
   a:=koki_foot.exiger('superadmin'); perform koki_foot.cles(input,'{fournisseur,seuil_ancien_s,attente_debut_s}');
   if koki_foot.t(input,'fournisseur') not in ('api-football','sportmonks') or koki_foot.t(input,'fournisseur') is null then perform koki_foot.echec('Fournisseur invalide'); end if;
   insert into koki_foot.etat_fournisseurs(fournisseur) values(koki_foot.t(input,'fournisseur')) on conflict do nothing;
@@ -663,6 +684,12 @@ begin
   insert into koki_foot.synchronisations(fournisseur,operation,statut,code,message) values(f,op,'erreur',code_,left(coalesce(koki_foot.t(input,'message'),'Erreur inconnue'),2000)) returning id into rid;
   return jsonb_build_object('journal',rid,'pause_jusqu_a',pause,'erreurs_consecutives',ef.erreurs_consecutives);
 
+ elsif command='empreinte_journal' then
+  -- Ancrage externe : dernière empreinte du journal des corrections et résultat de la vérification complète.
+  perform koki_foot.cles(input,'{fournisseur,operation}');
+  return (select jsonb_build_object('dernier_id',c.id,'empreinte',c.empreinte,'lignes',(select count(*) from koki_foot.corrections),
+   'premiere_alteration',koki_foot.verifier_journal(),'lu_le',now()) from (select id,empreinte from koki_foot.corrections order by id desc limit 1) c
+   right join (select 1) x on true);
  elsif command<>'importer' then perform koki_foot.echec('Commande inconnue'); end if;
 
  perform koki_foot.cles(input,'{fournisseur,operation,quota_restant,competitions,equipes,inscriptions,matchs,evenements,evenements_complets,classements}');
