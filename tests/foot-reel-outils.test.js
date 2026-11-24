@@ -21,3 +21,19 @@ test('scripts réels : aucun secret ni adresse de production en dur, garde-fou a
  for(const f of ['auth-reel.mjs','realtime-reel.mjs']){const s=readFileSync('supabase/historique/outils/foot-reel/'+f,'utf8');
   assert.doesNotMatch(s,new RegExp(PRODUCTION_REF));assert.doesNotMatch(s,/eyJ[A-Za-z0-9_-]{20,}/);assert.match(s,/environnement\(\)/);}
 });
+import {expurger,totpFrais,rapporteur} from '../supabase/historique/outils/foot-reel/commun.mjs';
+test('preuves expurgées : jetons, clés, e-mails et secrets TOTP masqués',()=>{
+ const t=expurger('Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abc sb_secret_abcDEF123 editeur@essai.koki.invalid JBSWY3DPEHPK3PXPJBSWY3DP');
+ assert.doesNotMatch(t,/eyJ|sb_secret|@essai|JBSWY3/);assert.match(t,/\[JWT\].*\[CLÉ\].*\[e-mail\].*\[SECRET\]/);
+});
+test('TOTP frais : un même pas de 30 s n’est jamais réutilisé',async()=>{
+ let t=60000*1000+29000;const now=()=>t;const s='GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
+ const a=await totpFrais(s,now);const attente=totpFrais(s,now);t+=1200;const b=await attente; // attend le pas suivant
+ assert.notEqual(a,b);
+});
+test('rapport : attendu, obtenu, statut et preuve par cas ; « non exécuté » jamais compté réussi',async()=>{
+ const R=rapporteur('essai');const log=console.log;console.log=()=>{};
+ await R.cas('a','x',async p=>{p('jeton','eyJabcdefghij.eyJabcdefghij.sig');return 'ok';});
+ await R.cas('b','y',async()=>'non_execute');await R.cas('c','z',async()=>{throw Error('refus');});console.log=log;
+ assert.deepEqual(R.r.map(x=>x.statut),['réussi','non exécuté','échoué']);assert.equal(R.r[0].preuve[0],'jeton [JWT]');
+});

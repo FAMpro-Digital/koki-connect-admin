@@ -78,3 +78,92 @@ jobs:
         run: bash supabase/historique/outils/tester-foot.sh
       - name: Football module — admin client integration with local PostgreSQL
         run: node --test tests/foot-admin-client.test.js
+
+  historique-sql-pg17:
+    # Même vérification que historique-sql, avec PostgreSQL 17 (version de la production Supabase).
+    # Base locale du runner uniquement ; aucune connexion à Supabase.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout reviewed development branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install and start PostgreSQL 17 (PGDG)
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-17 >/dev/null
+          sudo pg_ctlcluster 17 main start
+          port=$(pg_lsclusters -h | awk '$1==17{print $3}')
+          echo "PGPORT=$port" >> "$GITHUB_ENV"
+          sudo -u postgres psql -p "$port" -c "create role $(id -un) superuser login" >/dev/null
+          psql -h /var/run/postgresql -p "$port" -d postgres -Atc "select 'Serveur : PostgreSQL '||current_setting('server_version')"
+      - name: Replay reference history (PostgreSQL 17) and compare with production fingerprint
+        env:
+          PGHOST: /var/run/postgresql
+          PGUSER: runner
+          PGDATABASE: postgres
+        run: bash supabase/historique/outils/verifier.sh
+      - name: Football module on PostgreSQL 17 — SQL tests, concurrency, rollback, unchanged objects, partial failure
+        env:
+          PGHOST: /var/run/postgresql
+          PGUSER: runner
+          PGDATABASE: postgres
+        run: bash supabase/historique/outils/tester-foot.sh
+
+  foot-essais-reels:
+    # Essais RÉELS d'authentification (MFA TOTP) et de Realtime dans un Supabase LOCAL ÉPHÉMÈRE (Docker du runner) :
+    # vrais services Auth, PostgREST et Realtime, PostgreSQL 17, structure de production rejouée.
+    # Aucun projet distant, aucun secret du dépôt : comptes et secrets générés pour l'exécution puis détruits.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout reviewed development branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Checkout public site (same feature branch, read only)
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: FAMpro-Digital/koki-connect
+          ref: feature/module-football
+          path: koki-connect-public
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start ephemeral local Supabase, replay production structure, apply Football migrations, create test accounts
+        env:
+          KOKI_ESSAI_ENV: ${{ runner.temp }}/koki-essai.env
+        run: bash supabase/historique/outils/foot-reel/preparer-supabase-local.sh
+      - name: Real authentication tests (8 scenarios)
+        env:
+          KOKI_ESSAI_RAPPORT: ${{ runner.temp }}/rapport-auth.json
+        run: |
+          set -a; . "$RUNNER_TEMP/koki-essai.env"; set +a
+          node supabase/historique/outils/foot-reel/auth-reel.mjs
+      - name: Real Realtime tests (two independent clients)
+        if: always()
+        env:
+          KOKI_ESSAI_RAPPORT: ${{ runner.temp }}/rapport-realtime.json
+          KOKI_PUBLIC_DIR: ${{ github.workspace }}/koki-connect-public
+        run: |
+          set -a; . "$RUNNER_TEMP/koki-essai.env"; set +a
+          node supabase/historique/outils/foot-reel/realtime-reel.mjs
+      - name: Redacted reports
+        if: always()
+        run: |
+          for f in "$RUNNER_TEMP"/rapport-*.json; do [ -f "$f" ] && { echo "== $f"; cat "$f"; }; done
+      - name: Stop and destroy local Supabase
+        if: always()
+        run: supabase stop --workdir supabase/historique/outils/foot-reel --no-backup || true
