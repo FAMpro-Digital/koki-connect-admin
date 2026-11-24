@@ -28,6 +28,9 @@ q -Atc "select 'PostgreSQL '||current_setting('server_version')"
 
 echo "── 2. Structure de production rejouée"
 psql "$ADMIN_DB" -v ON_ERROR_STOP=1 -X -q -c "create extension if not exists pg_cron; create extension if not exists pg_net with schema extensions; grant usage on schema cron to postgres; grant all on all tables in schema cron to postgres" >/dev/null
+# Fonction propre à la plateforme Supabase hébergée (présente en production, absente du Supabase local) :
+# même définition neutre que outils/simulation-supabase.sql, ignorée par la comparaison d'empreinte.
+psql "$ADMIN_DB" -v ON_ERROR_STOP=1 -X -q -c "create or replace function public.rls_auto_enable() returns event_trigger language plpgsql as \$\$ begin end \$\$" >/dev/null
 while read -r f; do [ -z "$f" ] && continue
   if ! sortie=$(psql "$ADMIN_DB" -v ON_ERROR_STOP=1 -X -q -f "$RACINE/$f" 2>&1 >/dev/null); then echo "ÉCHEC $f"; echo "$sortie" | grep -E "ERROR|ERREUR" | head -3; exit 1; fi
 done < "$H/reference/ordre.txt"
