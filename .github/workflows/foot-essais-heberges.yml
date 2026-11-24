@@ -1,0 +1,74 @@
+name: Football — essais sur Supabase HÉBERGÉ d'essai (manuel)
+
+# NE SE DÉCLENCHE JAMAIS TOUT SEUL : lancement manuel uniquement, après autorisation écrite du propriétaire.
+#  - Environnement GitHub « koki-foot-essai » : relecteur obligatoire (Settings → Environments → Required reviewers)
+#    et secrets du projet d'ESSAI uniquement : KOKI_ESSAI_URL, KOKI_ESSAI_DB_URL, KOKI_ESSAI_PUBLISHABLE_KEY,
+#    KOKI_ESSAI_SECRET_KEY. Jamais les clés de production.
+#  - Phrase exacte OUI-ESSAI-<référence du projet d'essai>. Les scripts refusent la production
+#    (qsbmzzbiztfqysstepxm), un projet non vide sans marqueur d'essai et toute clé secrète utilisée comme clé publique.
+#  - Le canal privé (propositions 0700/0710) n'est appliqué QUE sur ce projet d'essai, puis retiré.
+# GitHub n'autorise le lancement manuel qu'une fois ce fichier présent sur la branche par défaut ; avant cela,
+# la même séquence se lance depuis un poste de confiance (docs/football-phase7.md, §3).
+
+on:
+  workflow_dispatch:
+    inputs:
+      autorisation:
+        description: 'Phrase exacte OUI-ESSAI-<référence du projet d’essai>'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foot-essais-heberges
+  cancel-in-progress: false
+
+jobs:
+  essais:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: koki-foot-essai
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: FAMpro-Digital/koki-connect
+          ref: feature/module-football
+          path: koki-connect-public
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - run: npm ci --no-audit --no-fund
+      - name: PostgreSQL client
+        run: sudo apt-get install -y -qq postgresql-client >/dev/null
+      - name: Préparer le projet d'essai (marqueur, structure, migrations Football, comptes aléatoires)
+        env:
+          KOKI_ESSAI_URL: ${{ secrets.KOKI_ESSAI_URL }}
+          KOKI_ESSAI_DB_URL: ${{ secrets.KOKI_ESSAI_DB_URL }}
+          KOKI_ESSAI_PUBLISHABLE_KEY: ${{ secrets.KOKI_ESSAI_PUBLISHABLE_KEY }}
+          KOKI_ESSAI_SECRET_KEY: ${{ secrets.KOKI_ESSAI_SECRET_KEY }}
+          KOKI_ESSAI_AUTORISATION: ${{ inputs.autorisation }}
+          KOKI_ESSAI_ENV: ${{ runner.temp }}/koki-essai.env
+        run: bash supabase/historique/outils/foot-reel/preparer-projet-essai.sh
+      - name: Authentification (8 scénarios)
+        env: {KOKI_ESSAI_RAPPORT: '${{ runner.temp }}/rapport-auth.json'}
+        run: set -a; . "$RUNNER_TEMP/koki-essai.env"; set +a; node supabase/historique/outils/foot-reel/auth-reel.mjs
+      - name: Realtime public (8 scénarios, clé sb_publishable)
+        if: always()
+        env: {KOKI_ESSAI_RAPPORT: '${{ runner.temp }}/rapport-realtime.json', KOKI_PUBLIC_DIR: '${{ github.workspace }}/koki-connect-public'}
+        run: set -a; . "$RUNNER_TEMP/koki-essai.env"; set +a; node supabase/historique/outils/foot-reel/realtime-reel.mjs
+      - name: Bascule complète du canal privé (0700 → prive:true → 0710 → retour), projet d'essai seulement
+        if: always()
+        env:
+          KOKI_ESSAI_RAPPORT: ${{ runner.temp }}/rapport-bascule.json
+          KOKI_PUBLIC_DIR: ${{ github.workspace }}/koki-connect-public
+          KOKI_ESSAI_DB_URL: ${{ secrets.KOKI_ESSAI_DB_URL }}
+        run: set -a; . "$RUNNER_TEMP/koki-essai.env"; set +a; node supabase/historique/outils/foot-reel/bascule-canal.mjs
+      - name: Rapports expurgés
+        if: always()
+        run: for f in "$RUNNER_TEMP"/rapport-*.json; do [ -f "$f" ] && { echo "== $f"; cat "$f"; }; done

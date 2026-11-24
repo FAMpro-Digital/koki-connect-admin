@@ -6,7 +6,7 @@ import {environnement,compte,totpFrais,rapporteur,vrai} from './commun.mjs';
 
 const ICI=path.dirname(fileURLToPath(import.meta.url));
 const D=createRequire(import.meta.url)(path.resolve(process.env.KOKI_PUBLIC_DIR||path.join(ICI,'../../../../../koki-connect'),'assets/portail/foot-direct.js'));
-const {url,cle}=environnement();const R=rapporteur('realtime');const MATCH=process.env.KOKI_ESSAI_MATCH_ID;
+const E=environnement(),{url,cle}=E;const R=rapporteur('realtime',{heberge:E.heberge,ref:E.ref,cle:E.type});const MATCH=process.env.KOKI_ESSAI_MATCH_ID;
 const attendre=(f,ms=10000)=>new Promise((ok,ko)=>{const t0=Date.now();const i=setInterval(()=>{if(f()){clearInterval(i);ok(Date.now()-t0);}else if(Date.now()-t0>ms){clearInterval(i);ko(Error('délai dépassé ('+ms+' ms)'));}},50);});
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 if(!MATCH){console.log('KOKI_ESSAI_MATCH_ID requis (match d’essai publié, en direct).');process.exit(2);}

@@ -40,6 +40,7 @@ python3 "$H/outils/comparer.py" "$H/reference/empreinte-production-2026-11-20.tx
 echo "── 3. Migrations Football"
 for f in 20261201000500_foot_schema 20261201000600_foot_acces; do psql "$ADMIN_DB" -v ON_ERROR_STOP=1 -X -q -f "$H/migrations/$f.sql" >/dev/null && echo "ok      $f"; done
 psql "$ADMIN_DB" -Atq -X -f "$H/outils/empreinte.sql" > "$SORTIE.apres"
+psql "$ADMIN_DB" -X -q -c "select cron.unschedule(jobname) from cron.job" >/dev/null
 python3 "$H/outils/comparer-ajouts.py" "$SORTIE.avant" "$SORTIE.apres"
 psql "$ADMIN_DB" -X -q -c "notify pgrst, 'reload schema'" >/dev/null
 

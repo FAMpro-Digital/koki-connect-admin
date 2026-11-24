@@ -37,3 +37,12 @@ test('rapport : attendu, obtenu, statut et preuve par cas ; « non exécuté » 
  await R.cas('b','y',async()=>'non_execute');await R.cas('c','z',async()=>{throw Error('refus');});console.log=log;
  assert.deepEqual(R.r.map(x=>x.statut),['réussi','non exécuté','échoué']);assert.equal(R.r[0].preuve[0],'jeton [JWT]');
 });
+test('clé publique : sb_publishable prioritaire, clé secrète refusée, environnement hébergé identifié',()=>{
+ const base={KOKI_ESSAI_URL:'https://abcdefghijklmnopqrst.supabase.co',KOKI_ESSAI_CONFIRME:'projet-essai'};
+ const e=environnement({...base,KOKI_ESSAI_PUBLISHABLE_KEY:'sb_publishable_x',KOKI_ESSAI_ANON_KEY:'autre'});
+ assert.equal(e.type,'publishable');assert.equal(e.cle,'sb_publishable_x');assert.equal(e.heberge,true);assert.equal(e.ref,'abcdefghijklmnopqrst');
+ assert.throws(()=>environnement({...base,KOKI_ESSAI_PUBLISHABLE_KEY:'sb_secret_x'}),/clé secrète/);
+ const jwtService='x.'+Buffer.from(JSON.stringify({role:'service_role'})).toString('base64url')+'.y';
+ assert.throws(()=>environnement({...base,KOKI_ESSAI_ANON_KEY:jwtService}),/clé secrète/);
+ assert.equal(environnement({KOKI_ESSAI_URL:'http://127.0.0.1:54321',KOKI_ESSAI_CONFIRME:'projet-essai',KOKI_ESSAI_ANON_KEY:'a.b.c'}).heberge,false);
+});

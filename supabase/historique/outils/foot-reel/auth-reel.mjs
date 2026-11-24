@@ -4,7 +4,7 @@
 import {createClient} from '@supabase/supabase-js';
 import {environnement,compte,totpFrais,rapporteur,vrai} from './commun.mjs';
 
-const {url,cle}=environnement();const R=rapporteur('authentification');const MATCH=process.env.KOKI_ESSAI_MATCH_ID;
+const E=environnement(),{url,cle}=E;const R=rapporteur('authentification',{heberge:E.heberge,ref:E.ref,cle:E.type});const MATCH=process.env.KOKI_ESSAI_MATCH_ID;
 const nouveau=(o={})=>createClient(url,cle,{auth:{persistSession:false,autoRefreshToken:false},...o});
 const jwt=t=>{try{return JSON.parse(Buffer.from(t.split('.')[1],'base64url').toString());}catch{return {};}};
 
