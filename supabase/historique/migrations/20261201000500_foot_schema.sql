@@ -15,6 +15,13 @@
 --    Une divergence entre l'API et une valeur verrouillée n'est jamais ignorée en silence : elle est inscrite
 --    dans koki_foot.conflits jusqu'à décision d'un administrateur ;
 --  * scores distincts : réglementaire (score_*), buts de prolongation (pro_*), tirs au but (tab_*) ;
+--    chaque événement porte sa PÉRIODE explicite (mi_temps_1/2, prolongation_1/2, tirs_au_but), la minute
+--    affichée et le temps additionnel séparément : aucune période n'est déduite de la minute ;
+--  * programmation : la dernière valeur reçue du fournisseur (api_date_match, api_lieu) est conservée à côté
+--    de la valeur publiée ; historique des deux dans historique_programmation ; tout changement d'horaire d'un
+--    match publié est inscrit dans changements_horaire (file pour le futur module de notifications) ;
+--  * journal des corrections chaîné (empreinte SHA-256 de la ligne précédente) : une altération faite en
+--    contournant les déclencheurs (propriétaire, superutilisateur) devient détectable (verifier_journal) ;
 --  * fraîcheur : source du résultat, date de dernière synchronisation par match, état de chaque fournisseur ;
 --  * journal : koki_private.audit() (révision et statut) + koki_foot.corrections (avant/après, auteur,
 --    motif), en ajout seul : aucune correction ne peut être modifiée ni effacée.
@@ -116,6 +123,9 @@ create table koki_foot.matchs(
  -- Séance de tirs au but.
  tab_domicile integer check (tab_domicile is null or tab_domicile between 0 and 99),
  tab_exterieur integer check (tab_exterieur is null or tab_exterieur between 0 and 99),
+ -- Dernière programmation reçue du fournisseur (conservée même si la valeur publiée est corrigée).
+ api_date_match timestamptz,
+ api_lieu text check (api_lieu is null or length(api_lieu)<=120),
  -- Forfait : équipe forfait (résultat officiel saisi dans le score) ; match rejoué : lien vers le match d'origine.
  forfait_equipe_id uuid references koki_foot.equipes(id) on delete restrict,
  rejoue_de uuid references koki_foot.matchs(id) on delete set null,
@@ -164,9 +174,13 @@ create index matchs_exterieur on koki_foot.matchs(exterieur_id);
 create table koki_foot.evenements(
  id uuid primary key default gen_random_uuid(),
  match_id uuid not null references koki_foot.matchs(id) on delete cascade,
- type text not null check (type in ('but','but_csc','penalty','penalty_manque','carton_jaune','carton_rouge','remplacement')),
+ type text not null check (type in ('but','but_csc','penalty','penalty_manque','carton_jaune','carton_rouge','remplacement','tab_reussi','tab_manque')),
+ -- Période explicite ; minute affichée (ex. 90) et temps additionnel (ex. +3) séparés.
+ periode text not null check (periode in ('mi_temps_1','mi_temps_2','prolongation_1','prolongation_2','tirs_au_but')),
  minute integer check (minute is null or minute between 0 and 150),
  minute_add integer check (minute_add is null or minute_add between 0 and 30),
+ -- Tirs au but : seulement dans la séance, jamais comptés comme buts du match.
+ check ((type in ('tab_reussi','tab_manque'))=(periode='tirs_au_but')),
  equipe_id uuid references koki_foot.equipes(id) on delete set null,
  joueur text not null default '' check (length(joueur)<=80),
  joueur2 text not null default '' check (length(joueur2)<=80),
@@ -176,7 +190,7 @@ create table koki_foot.evenements(
  created_at timestamptz not null default now(),
  unique (match_id, cle)
 );
-create index evenements_match on koki_foot.evenements(match_id, minute);
+create index evenements_match on koki_foot.evenements(match_id, periode, minute);
 
 -- L'équipe d'un événement doit être l'une des deux équipes du match.
 create function koki_foot.evenement_equipe() returns trigger language plpgsql set search_path='' as $$
@@ -213,7 +227,10 @@ create table koki_foot.corrections(
  avant jsonb not null default '{}'::jsonb check (jsonb_typeof(avant)='object'),
  apres jsonb not null default '{}'::jsonb check (jsonb_typeof(apres)='object'),
  motif text not null default '' check (length(motif)<=300),
- created_at timestamptz not null default now()
+ created_at timestamptz not null default now(),
+ -- Chaînage : empreinte = SHA-256(empreinte précédente | contenu de la ligne).
+ precedente text,
+ empreinte text
 );
 create index corrections_match on koki_foot.corrections(match_id, created_at desc);
 create function koki_foot.corrections_ajout_seul() returns trigger language plpgsql set search_path='' as $$
@@ -222,6 +239,26 @@ begin
  if tg_op='UPDATE' and new.id=old.id and new.acteur is not distinct from old.acteur and new.action=old.action and new.avant=old.avant
     and new.apres=old.apres and new.motif=old.motif and new.created_at=old.created_at and new.match_id is null then return new; end if;
  raise exception 'Journal des corrections : ajout seul' using errcode='42501';
+end $$;
+create function koki_foot.corrections_contenu(c koki_foot.corrections) returns text language sql immutable set search_path='' as
+$$ select concat_ws('|',c.id,c.match_id,c.acteur,c.action,c.avant::text,c.apres::text,c.motif,to_char(c.created_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US')) $$;
+create function koki_foot.corrections_chainer() returns trigger language plpgsql set search_path='' as $$
+begin
+ -- Une écriture à la fois dans le journal : la chaîne reste linéaire.
+ perform pg_advisory_xact_lock(hashtext('koki_foot.corrections'));
+ new.precedente:=(select c.empreinte from koki_foot.corrections c order by c.id desc limit 1);
+ new.empreinte:=encode(sha256(convert_to(coalesce(new.precedente,'')||'|'||koki_foot.corrections_contenu(new),'UTF8')),'hex');
+ return new;
+end $$;
+create trigger corrections_chainer before insert on koki_foot.corrections for each row execute function koki_foot.corrections_chainer();
+-- Vérification : renvoie l'identifiant de la première ligne altérée, supprimée ou réordonnée (null si intact).
+create function koki_foot.verifier_journal() returns bigint language plpgsql stable set search_path='' as $$
+declare c koki_foot.corrections; prec text:=null; begin
+ for c in select * from koki_foot.corrections order by id loop
+  if c.precedente is distinct from prec or c.empreinte is distinct from encode(sha256(convert_to(coalesce(prec,'')||'|'||koki_foot.corrections_contenu(c),'UTF8')),'hex') then return c.id; end if;
+  prec:=c.empreinte;
+ end loop;
+ return null;
 end $$;
 create trigger corrections_ajout_seul before update or delete on koki_foot.corrections for each row execute function koki_foot.corrections_ajout_seul();
 -- TRUNCATE contourne les déclencheurs de ligne : interdit aussi.
@@ -255,8 +292,39 @@ create table koki_foot.etat_fournisseurs(
  derniere_erreur_code text check (derniere_erreur_code in ('indisponible','quota','authentification','donnees','delai','autre')),
  erreurs_consecutives integer not null default 0 check (erreurs_consecutives>=0),
  quota_restant integer check (quota_restant is null or quota_restant>=0),
- pause_jusqu_a timestamptz
+ pause_jusqu_a timestamptz,
+ -- Distinction : tentative (appel fait), réussite (réponse exploitable), modification (donnée changée).
+ derniere_tentative timestamptz,
+ derniere_modification timestamptz,
+ -- Seuils réglables selon la fréquence réelle de synchronisation (forfait choisi).
+ seuil_ancien_s integer not null default 300 check (seuil_ancien_s between 60 and 86400),
+ attente_debut_s integer not null default 1800 check (attente_debut_s between 300 and 86400)
 );
+
+-- ───────────── Programmation : historique et changements d'horaire ─────────────
+create table koki_foot.historique_programmation(
+ id bigint generated always as identity primary key,
+ match_id uuid not null references koki_foot.matchs(id) on delete cascade,
+ origine text not null check (origine in ('api','manuel')),
+ date_match timestamptz,
+ lieu text check (lieu is null or length(lieu)<=120),
+ motif text not null default '' check (length(motif)<=300),
+ acteur uuid references auth.users(id) on delete set null,
+ created_at timestamptz not null default now()
+);
+create index historique_programmation_match on koki_foot.historique_programmation(match_id, id);
+-- File pour le futur module de notifications : un changement d'horaire d'un match publié, une seule fois.
+create table koki_foot.changements_horaire(
+ id bigint generated always as identity primary key,
+ match_id uuid not null references koki_foot.matchs(id) on delete cascade,
+ ancienne timestamptz not null,
+ nouvelle timestamptz not null,
+ origine text not null check (origine in ('api','manuel')),
+ created_at timestamptz not null default now(),
+ traite_le timestamptz,
+ unique (match_id, ancienne, nouvelle)
+);
+create index changements_horaire_a_traiter on koki_foot.changements_horaire(created_at) where traite_le is null;
 
 -- ───────────── Journal des synchronisations ─────────────
 create table koki_foot.synchronisations(
@@ -276,7 +344,10 @@ create index synchronisations_date on koki_foot.synchronisations(created_at desc
 -- matchs pour ne pas créer une révision et une ligne d'audit à chaque passage.
 create table koki_foot.vus_api(
  match_id uuid primary key references koki_foot.matchs(id) on delete cascade,
- vu_le timestamptz not null default now()
+ -- Dernière réponse EXPLOITABLE du fournisseur contenant ce match (ligne valide et traitée).
+ vu_le timestamptz not null default now(),
+ -- Dernière fois que le fournisseur a effectivement changé une donnée de ce match.
+ modifie_le timestamptz
 );
 
 -- ───────────── Horodatage et journal (fonctions existantes) ─────────────

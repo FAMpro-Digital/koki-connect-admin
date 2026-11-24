@@ -44,7 +44,7 @@ psql -Atq -d "$B" >/dev/null <<SQL
 set role service_role; select set_config('request.jwt.claims','{"role":"service_role"}',false);
 select public.koki_foot_sync('importer','{"fournisseur":"sportmonks","operation":"conc-prep","competitions":[{"ref":"SC1","nom":"Conc League"}],"equipes":[{"ref":"S1","nom":"S1"},{"ref":"S2","nom":"S2"}]}');
 SQL
-LOT='{"fournisseur":"sportmonks","operation":"conc","matchs":[{"ref":"SM1","competition_ref":"SC1","domicile_ref":"S1","exterieur_ref":"S2","date_match":"2026-12-05T16:00:00Z"}],"evenements":[{"match_ref":"SM1","cle":"SM1|k","type":"carton_jaune","minute":5}]}'
+LOT='{"fournisseur":"sportmonks","operation":"conc","matchs":[{"ref":"SM1","competition_ref":"SC1","domicile_ref":"S1","exterieur_ref":"S2","date_match":"2026-12-05T16:00:00Z"}],"evenements":[{"match_ref":"SM1","cle":"SM1|k","type":"carton_jaune","periode":"mi_temps_1","minute":5}]}'
 sync(){ psql -Atq -d "$B" 2>&1 <<SQL
 begin;
 set role service_role; select set_config('request.jwt.claims','{"role":"service_role"}',true);

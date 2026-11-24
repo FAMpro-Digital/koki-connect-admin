@@ -17,7 +17,7 @@
 begin;
 
 do $$ begin
- if to_regnamespace('koki_foot') is null or to_regclass('koki_foot.conflits') is null or to_regclass('koki_foot.vus_api') is null then
+ if to_regnamespace('koki_foot') is null or to_regclass('koki_foot.conflits') is null or to_regclass('koki_foot.vus_api') is null or to_regclass('koki_foot.changements_horaire') is null then
   raise exception 'GARDE : appliquer d''abord 20261201000500_foot_schema.sql';
  end if;
  if to_regprocedure('public.koki_foot_public(text,jsonb)') is not null or to_regprocedure('public.koki_foot_admin(text,jsonb)') is not null
@@ -76,45 +76,67 @@ $$ select statut in ('En direct','Mi-temps','Prolongations','Tirs au but','Inter
 -- ───────────── Représentations ─────────────
 create function koki_foot.equipe_json(e koki_foot.equipes) returns jsonb language sql stable set search_path='' as
 $$ select jsonb_build_object('id',e.id,'nom',e.nom,'nom_court',e.nom_court,'logo_url',e.logo_url,'couleurs',to_jsonb(e.couleurs),'portee',e.portee,'quartier',e.quartier) $$;
--- Fraîcheur : manuel ; a_jour ; corrige (résultat corrigé par un administrateur) ;
--- ancien (match api en jeu sans passage de la synchronisation depuis 5 min, ou match api qui aurait dû
--- commencer depuis 30 min sans nouvelles du fournisseur).
+-- État d'une source (fournisseur) : ok ; degrade (dernière tentative en échec, dernière réussite récente) ;
+-- en_pause (panne ou quota) ; hors_service (aucune réussite depuis 3 seuils) ; inconnu (jamais appelée).
+create function koki_foot.etat_source(f koki_foot.etat_fournisseurs) returns text language sql stable set search_path='' as $$
+ select case when f.fournisseur is null or f.derniere_tentative is null then 'inconnu'
+  when f.pause_jusqu_a>now() then 'en_pause'
+  when f.derniere_reussite is null or f.derniere_reussite<now()-make_interval(secs=>3*f.seuil_ancien_s) then 'hors_service'
+  when f.derniere_erreur is not null and f.derniere_erreur>f.derniere_reussite then 'degrade'
+  else 'ok' end
+$$;
+-- Fraîcheur d'un match : manuel ; corrige (résultat corrigé par un administrateur) ; ancien (match api en jeu
+-- sans réponse exploitable depuis le seuil du fournisseur, ou qui aurait dû commencer depuis attente_debut_s) ;
+-- a_jour. Expose la dernière actualisation (réponse exploitable), la dernière modification et l'état de la source.
 create function koki_foot.fraicheur(m koki_foot.matchs) returns jsonb language sql stable set search_path='' as $$
- select jsonb_build_object('source_resultat',m.resultat_source,'synchronise_le',v.vu,
+ select jsonb_build_object('source',m.source,'fournisseur',m.fournisseur,'source_resultat',m.resultat_source,
+  'derniere_actualisation',v.vu_le,'derniere_modification',v.modifie_le,
+  'etat_source',case when m.source='api' then koki_foot.etat_source(f) end,
   'etat',case when m.source='manuel' then 'manuel'
    when m.resultat_source='correction' then 'corrige'
-   when koki_foot.en_jeu(m.statut) and coalesce(v.vu,'-infinity')<now()-interval '5 minutes' then 'ancien'
-   when m.statut='À venir' and m.date_match<now()-interval '30 minutes' and coalesce(v.vu,'-infinity')<now()-interval '5 minutes' then 'ancien'
+   when koki_foot.en_jeu(m.statut) and coalesce(v.vu_le,'-infinity')<now()-make_interval(secs=>coalesce(f.seuil_ancien_s,300)) then 'ancien'
+   when m.statut='À venir' and m.date_match<now()-make_interval(secs=>coalesce(f.attente_debut_s,1800))
+        and coalesce(v.vu_le,'-infinity')<now()-make_interval(secs=>coalesce(f.seuil_ancien_s,300)) then 'ancien'
    else 'a_jour' end)
- from (select greatest(m.synchronise_le,(select vu_le from koki_foot.vus_api where match_id=m.id)) vu) v
+ from (select 1) x
+ left join koki_foot.vus_api v on v.match_id=m.id
+ left join koki_foot.etat_fournisseurs f on f.fournisseur=m.fournisseur
 $$;
 create function koki_foot.match_json(m koki_foot.matchs) returns jsonb language sql stable set search_path='' as $$
  select jsonb_build_object('id',m.id,'revision',m.revision,'competition',jsonb_build_object('id',c.id,'nom',c.nom,'saison',c.saison,'portee',c.portee,'type',c.type,'logo_url',c.logo_url),
   'domicile',koki_foot.equipe_json(d),'exterieur',koki_foot.equipe_json(x),'date_match',m.date_match,'lieu',m.lieu,'poule',m.poule,'journee',m.journee,
   'statut',m.statut,'minute',m.minute,'score_domicile',m.score_domicile,'score_exterieur',m.score_exterieur,'pro_domicile',m.pro_domicile,'pro_exterieur',m.pro_exterieur,
   'tab_domicile',m.tab_domicile,'tab_exterieur',m.tab_exterieur,'forfait_equipe_id',m.forfait_equipe_id,'rejoue_de',m.rejoue_de,
+  'programmation_corrigee',m.verrou_programmation,
   'commentaire',m.commentaire,'source',m.source,'fraicheur',koki_foot.fraicheur(m),'mis_a_jour',m.updated_at)
  from koki_foot.competitions c, koki_foot.equipes d, koki_foot.equipes x where c.id=m.competition_id and d.id=m.domicile_id and x.id=m.exterieur_id
 $$;
 create function koki_foot.evenement_json(v koki_foot.evenements) returns jsonb language sql stable set search_path='' as
-$$ select jsonb_build_object('id',v.id,'type',v.type,'minute',v.minute,'minute_add',v.minute_add,'equipe_id',v.equipe_id,'joueur',v.joueur,'joueur2',v.joueur2) $$;
+$$ select jsonb_build_object('id',v.id,'type',v.type,'periode',v.periode,'minute',v.minute,'minute_add',v.minute_add,'equipe_id',v.equipe_id,'joueur',v.joueur,'joueur2',v.joueur2) $$;
+create function koki_foot.rang_periode(p text) returns integer language sql immutable set search_path='' as
+$$ select array_position(array['mi_temps_1','mi_temps_2','prolongation_1','prolongation_2','tirs_au_but'],p) $$;
 -- Visible publiquement : match publié d'une compétition publiée et non archivée.
 create function koki_foot.visible(m koki_foot.matchs) returns boolean language sql stable set search_path='' as
 $$ select m.publie and exists(select 1 from koki_foot.competitions c where c.id=m.competition_id and c.publie and c.statut<>'archivée') $$;
 
--- Cohérence événements ↔ score : buts (but, penalty) pour l'équipe, but contre son camp pour l'adversaire ;
--- minute > 90 = prolongation. etat : aucun_evenement | coherent | incoherent.
+-- Cohérence événements ↔ score, PAR PÉRIODE explicite : buts (but, penalty) pour l'équipe, but contre son camp
+-- pour l'adversaire ; mi-temps 1-2 => score réglementaire, prolongation 1-2 => pro_*, séance => tab_* (tab_reussi).
+-- Les tirs au but ne comptent jamais comme buts du match. etat : aucun_evenement | coherent | incoherent.
 create function koki_foot.coherence(m koki_foot.matchs) returns jsonb language sql stable set search_path='' as $$
  with b as (select
-   count(*) filter (where coalesce(v.minute,0)<=90 and ((v.type in ('but','penalty') and v.equipe_id=m.domicile_id) or (v.type='but_csc' and v.equipe_id=m.exterieur_id)))::int rd,
-   count(*) filter (where coalesce(v.minute,0)<=90 and ((v.type in ('but','penalty') and v.equipe_id=m.exterieur_id) or (v.type='but_csc' and v.equipe_id=m.domicile_id)))::int re,
-   count(*) filter (where v.minute>90 and ((v.type in ('but','penalty') and v.equipe_id=m.domicile_id) or (v.type='but_csc' and v.equipe_id=m.exterieur_id)))::int pd,
-   count(*) filter (where v.minute>90 and ((v.type in ('but','penalty') and v.equipe_id=m.exterieur_id) or (v.type='but_csc' and v.equipe_id=m.domicile_id)))::int pe,
-   count(*) filter (where v.type in ('but','penalty','but_csc'))::int n
+   count(*) filter (where v.periode in ('mi_temps_1','mi_temps_2') and ((v.type in ('but','penalty') and v.equipe_id=m.domicile_id) or (v.type='but_csc' and v.equipe_id=m.exterieur_id)))::int rd,
+   count(*) filter (where v.periode in ('mi_temps_1','mi_temps_2') and ((v.type in ('but','penalty') and v.equipe_id=m.exterieur_id) or (v.type='but_csc' and v.equipe_id=m.domicile_id)))::int re,
+   count(*) filter (where v.periode in ('prolongation_1','prolongation_2') and ((v.type in ('but','penalty') and v.equipe_id=m.domicile_id) or (v.type='but_csc' and v.equipe_id=m.exterieur_id)))::int pd,
+   count(*) filter (where v.periode in ('prolongation_1','prolongation_2') and ((v.type in ('but','penalty') and v.equipe_id=m.exterieur_id) or (v.type='but_csc' and v.equipe_id=m.domicile_id)))::int pe,
+   count(*) filter (where v.type='tab_reussi' and v.equipe_id=m.domicile_id)::int td,
+   count(*) filter (where v.type='tab_reussi' and v.equipe_id=m.exterieur_id)::int te,
+   count(*) filter (where v.type in ('but','penalty','but_csc'))::int n,
+   count(*) filter (where v.periode='tirs_au_but')::int nt
   from koki_foot.evenements v where v.match_id=m.id)
- select jsonb_build_object('buts_evenements',jsonb_build_array(rd,re,pd,pe),
-  'etat',case when n=0 then 'aucun_evenement'
-   when (rd,re,pd,pe)=(coalesce(m.score_domicile,0),coalesce(m.score_exterieur,0),coalesce(m.pro_domicile,0),coalesce(m.pro_exterieur,0)) then 'coherent'
+ select jsonb_build_object('buts_evenements',jsonb_build_object('reglementaire',jsonb_build_array(rd,re),'prolongation',jsonb_build_array(pd,pe),'tirs_au_but',jsonb_build_array(td,te)),
+  'etat',case when n=0 and nt=0 then 'aucun_evenement'
+   when (rd,re,pd,pe)=(coalesce(m.score_domicile,0),coalesce(m.score_exterieur,0),coalesce(m.pro_domicile,0),coalesce(m.pro_exterieur,0))
+    and (nt=0 or (td,te)=(coalesce(m.tab_domicile,0),coalesce(m.tab_exterieur,0))) then 'coherent'
    else 'incoherent' end) from b
 $$;
 create function koki_foot.verrous_json(m koki_foot.matchs) returns jsonb language sql immutable set search_path='' as
@@ -186,6 +208,20 @@ begin
 end $$;
 create trigger evenements_diffusion after insert or delete on koki_foot.evenements for each row execute function koki_foot.evenement_diffuse();
 
+-- ───────────── Changements d'horaire (file pour les notifications futures) ─────────────
+-- Match publié dont l'heure change (correction manuelle ou fournisseur) : inscrit une seule fois par
+-- couple (ancienne, nouvelle). Les rappels déjà programmés devront être recalculés à partir de cette file.
+create function koki_foot.horaire_change() returns trigger language plpgsql security definer set search_path='' as $$
+begin
+ if new.date_match is distinct from old.date_match and koki_foot.visible(new) then
+  insert into koki_foot.changements_horaire(match_id,ancienne,nouvelle,origine)
+   values(new.id,old.date_match,new.date_match,case when current_setting('koki_foot.origine',true)='api' then 'api' else 'manuel' end)
+  on conflict (match_id,ancienne,nouvelle) do nothing;
+ end if;
+ return null;
+end $$;
+create trigger matchs_horaire after update of date_match on koki_foot.matchs for each row execute function koki_foot.horaire_change();
+
 -- ───────────── Lecture publique ─────────────
 create function public.koki_foot_public(command text, input jsonb default '{}'::jsonb) returns jsonb language plpgsql stable security definer set search_path='' as $$
 declare p text; c uuid; m koki_foot.matchs; begin
@@ -206,7 +242,7 @@ declare p text; c uuid; m koki_foot.matchs; begin
   perform koki_foot.cles(input,'{id}');
   select * into m from koki_foot.matchs where id=koki_foot.u(input,'id');
   if not found or not koki_foot.visible(m) then return null; end if;
-  return koki_foot.match_json(m)||jsonb_build_object('evenements',coalesce((select jsonb_agg(koki_foot.evenement_json(v) order by v.minute nulls first, v.minute_add nulls first, v.created_at)
+  return koki_foot.match_json(m)||jsonb_build_object('evenements',coalesce((select jsonb_agg(koki_foot.evenement_json(v) order by koki_foot.rang_periode(v.periode), v.minute nulls first, v.minute_add nulls first, v.created_at)
    from koki_foot.evenements v where v.match_id=m.id),'[]'));
  elsif command='etat_matchs' then
   -- Resynchronisation après reconnexion : état actuel des matchs affichés (100 au plus).
@@ -214,6 +250,10 @@ declare p text; c uuid; m koki_foot.matchs; begin
   if jsonb_typeof(input->'ids')<>'array' or jsonb_array_length(input->'ids')>100 then perform koki_foot.echec('Liste invalide'); end if;
   return coalesce((select jsonb_agg(koki_foot.match_json(x)) from koki_foot.matchs x
    where x.id in (select koki_foot.u(jsonb_build_object('v',e),'v') from jsonb_array_elements_text(input->'ids') e) and koki_foot.visible(x)),'[]');
+ elsif command='sources' then
+  -- État public des sources (sans secret) : dernière actualisation réussie et état.
+  perform koki_foot.cles(input,'{}');
+  return coalesce((select jsonb_agg(jsonb_build_object('fournisseur',x.fournisseur,'derniere_actualisation',x.derniere_reussite,'etat',koki_foot.etat_source(x)) order by x.fournisseur) from koki_foot.etat_fournisseurs x),'[]');
  elsif command='competitions' then
   perform koki_foot.cles(input,'{}');
   return coalesce((select jsonb_agg(jsonb_build_object('id',x.id,'nom',x.nom,'saison',x.saison,'portee',x.portee,'type',x.type,'logo_url',x.logo_url,'statut',x.statut,
@@ -288,20 +328,21 @@ begin
  return r;
 end $$;
 
--- Score à appliquer pour un but ajouté (+1) ou retiré (-1). minute > 90 : prolongation.
+-- Score à appliquer pour un événement ajouté (+1) ou retiré (-1), selon sa PÉRIODE : mi-temps => score
+-- réglementaire, prolongation => pro_*, séance de tirs au but (tab_reussi) => tab_*. Autres types : aucun effet.
 create function koki_foot.effet_but(m koki_foot.matchs, v koki_foot.evenements, sens integer) returns jsonb language plpgsql stable set search_path='' as $$
-declare pour_dom boolean; pro boolean:=coalesce(v.minute,0)>90; o jsonb;
+declare pour_dom boolean; cle text; o jsonb;
 begin
- if v.type not in ('but','penalty','but_csc') or v.equipe_id is null then return null; end if;
+ if v.equipe_id is null or v.type not in ('but','penalty','but_csc','tab_reussi') then return null; end if;
  pour_dom:=(v.type='but_csc')<>(v.equipe_id=m.domicile_id);
  o:=jsonb_build_object('score_domicile',coalesce(m.score_domicile,0),'score_exterieur',coalesce(m.score_exterieur,0));
- if pro or m.pro_domicile is not null then o:=o||jsonb_build_object('pro_domicile',coalesce(m.pro_domicile,0),'pro_exterieur',coalesce(m.pro_exterieur,0)); end if;
- if pro then
-  if pour_dom then o:=jsonb_set(o,'{pro_domicile}',to_jsonb(greatest((o->>'pro_domicile')::int+sens,0))); else o:=jsonb_set(o,'{pro_exterieur}',to_jsonb(greatest((o->>'pro_exterieur')::int+sens,0))); end if;
- else
-  if pour_dom then o:=jsonb_set(o,'{score_domicile}',to_jsonb(greatest((o->>'score_domicile')::int+sens,0))); else o:=jsonb_set(o,'{score_exterieur}',to_jsonb(greatest((o->>'score_exterieur')::int+sens,0))); end if;
- end if;
- return o;
+ if v.periode in ('prolongation_1','prolongation_2') or m.pro_domicile is not null then
+  o:=o||jsonb_build_object('pro_domicile',coalesce(m.pro_domicile,0),'pro_exterieur',coalesce(m.pro_exterieur,0)); end if;
+ if v.periode='tirs_au_but' or m.tab_domicile is not null then
+  o:=o||jsonb_build_object('tab_domicile',coalesce(m.tab_domicile,0),'tab_exterieur',coalesce(m.tab_exterieur,0)); end if;
+ cle:=case when v.periode in ('mi_temps_1','mi_temps_2') then 'score_' when v.periode='tirs_au_but' then 'tab_' else 'pro_' end
+   ||case when pour_dom then 'domicile' else 'exterieur' end;
+ return jsonb_set(o,array[cle],to_jsonb(greatest((o->>cle)::int+sens,0)));
 end $$;
 
 create function public.koki_foot_admin(command text, input jsonb default '{}'::jsonb) returns jsonb language plpgsql security definer set search_path='' as $$
@@ -321,11 +362,12 @@ declare a uuid; c koki_foot.competitions; e koki_foot.equipes; m koki_foot.match
      from koki_foot.matchs x where x.date_match>=coalesce(koki_foot.ts(input,'depuis'),now()-interval '30 days') and x.date_match<now()+interval '60 days'
       and (x.source='manuel' or koki_foot.en_jeu(x.statut) or exists(select 1 from koki_foot.competitions c2 where c2.id=x.competition_id and c2.publie))),'[]'),
    'conflits_ouverts',(select count(*) from koki_foot.conflits where not resolu),
-   'fournisseurs',coalesce((select jsonb_agg(to_jsonb(x)) from koki_foot.etat_fournisseurs x),'[]'),
+   'fournisseurs',coalesce((select jsonb_agg(to_jsonb(x)||jsonb_build_object('etat',koki_foot.etat_source(x))) from koki_foot.etat_fournisseurs x),'[]'),
+   'changements_horaire_a_traiter',(select count(*) from koki_foot.changements_horaire where traite_le is null),
    'synchronisations',coalesce((select jsonb_agg(to_jsonb(y) order by y.created_at desc) from (select * from koki_foot.synchronisations order by created_at desc limit 20) y),'[]'));
  elsif command='evenements' then
   a:=koki_foot.exiger('read'); perform koki_foot.cles(input,'{match_id}');
-  return coalesce((select jsonb_agg(koki_foot.evenement_json(x)||jsonb_build_object('source',x.source) order by x.minute nulls first, x.created_at) from koki_foot.evenements x where x.match_id=koki_foot.u(input,'match_id')),'[]');
+  return coalesce((select jsonb_agg(koki_foot.evenement_json(x)||jsonb_build_object('source',x.source) order by koki_foot.rang_periode(x.periode), x.minute nulls first, x.minute_add nulls first, x.created_at) from koki_foot.evenements x where x.match_id=koki_foot.u(input,'match_id')),'[]');
  elsif command='corrections' then
   a:=koki_foot.exiger('read'); perform koki_foot.cles(input,'{match_id}');
   return coalesce((select jsonb_agg(to_jsonb(y) order by y.created_at desc) from (select x.*, (select u.email from auth.users u where u.id=x.acteur) acteur_email from koki_foot.corrections x
@@ -334,9 +376,30 @@ declare a uuid; c koki_foot.competitions; e koki_foot.equipes; m koki_foot.match
   a:=koki_foot.exiger('read'); perform koki_foot.cles(input,'{tous}');
   return coalesce((select jsonb_agg(to_jsonb(x)||jsonb_build_object('match',koki_foot.match_json(mm)) order by x.dernier_vu desc) from koki_foot.conflits x join koki_foot.matchs mm on mm.id=x.match_id
    where koki_foot.b(input,'tous',false) or not x.resolu),'[]');
+ elsif command='programmation' then
+  -- Valeur publiée, dernière valeur du fournisseur et historique des deux.
+  a:=koki_foot.exiger('read'); perform koki_foot.cles(input,'{match_id}');
+  select * into m from koki_foot.matchs where id=koki_foot.u(input,'match_id'); if not found then perform koki_foot.echec('Match introuvable'); end if;
+  return jsonb_build_object('publiee',jsonb_build_object('date_match',m.date_match,'lieu',m.lieu),'fournisseur',jsonb_build_object('date_match',m.api_date_match,'lieu',m.api_lieu),
+   'verrou_programmation',m.verrou_programmation,
+   'historique',coalesce((select jsonb_agg(to_jsonb(h) order by h.id) from koki_foot.historique_programmation h where h.match_id=m.id),'[]'),
+   'changements_horaire',coalesce((select jsonb_agg(to_jsonb(c2) order by c2.id) from koki_foot.changements_horaire c2 where c2.match_id=m.id),'[]'));
+ elsif command='verifier_journal' then
+  a:=koki_foot.exiger('read'); perform koki_foot.cles(input,'{}');
+  return jsonb_build_object('premiere_alteration',koki_foot.verifier_journal(),'lignes',(select count(*) from koki_foot.corrections));
  elsif command='classement' then
   a:=koki_foot.exiger('read'); perform koki_foot.cles(input,'{competition_id,poule}');
   return koki_foot.classement(koki_foot.u(input,'competition_id'),koki_foot.t(input,'poule'));
+ end if;
+
+ -- ── Réglages des sources (superadmin seulement) ──
+ if command='regler_source' then
+  a:=koki_foot.exiger('superadmin'); perform koki_foot.cles(input,'{fournisseur,seuil_ancien_s,attente_debut_s}');
+  if koki_foot.t(input,'fournisseur') not in ('api-football','sportmonks') or koki_foot.t(input,'fournisseur') is null then perform koki_foot.echec('Fournisseur invalide'); end if;
+  insert into koki_foot.etat_fournisseurs(fournisseur) values(koki_foot.t(input,'fournisseur')) on conflict do nothing;
+  update koki_foot.etat_fournisseurs set seuil_ancien_s=coalesce(koki_foot.i(input,'seuil_ancien_s'),seuil_ancien_s), attente_debut_s=coalesce(koki_foot.i(input,'attente_debut_s'),attente_debut_s)
+   where fournisseur=koki_foot.t(input,'fournisseur');
+  return (select to_jsonb(x) from koki_foot.etat_fournisseurs x where fournisseur=koki_foot.t(input,'fournisseur'));
  end if;
 
  -- ── Écriture ──
@@ -405,7 +468,11 @@ declare a uuid; c koki_foot.competitions; e koki_foot.equipes; m koki_foot.match
     update koki_foot.matchs set domicile_id=coalesce(koki_foot.u(input,'domicile_id'),domicile_id), exterieur_id=coalesce(koki_foot.u(input,'exterieur_id'),exterieur_id),
      date_match=coalesce(koki_foot.ts(input,'date_match'),date_match), lieu=coalesce(koki_foot.t(input,'lieu'),lieu), poule=coalesce(koki_foot.t(input,'poule'),poule),
      journee=coalesce(koki_foot.t(input,'journee'),journee), commentaire=coalesce(koki_foot.t(input,'commentaire'),commentaire), publie=koki_foot.b(input,'publie',publie)
-    where id=m.id returning * into m;
+    where id=m.id returning * into n2;
+    if (n2.date_match,n2.lieu) is distinct from (m.date_match,m.lieu) then
+     insert into koki_foot.historique_programmation(match_id,origine,date_match,lieu,motif,acteur) values(m.id,'manuel',n2.date_match,n2.lieu,left(coalesce(koki_foot.t(input,'motif'),''),300),a);
+    end if;
+    m:=n2;
    else
     -- Match importé : équipes, compétition, journée et poule suivent le fournisseur. Date et lieu corrigeables
     -- (verrou de programmation + motif) ; commentaire et publication libres.
@@ -416,7 +483,8 @@ declare a uuid; c koki_foot.competitions; e koki_foot.equipes; m koki_foot.match
     if (input ? 'date_match' and koki_foot.ts(input,'date_match') is distinct from m.date_match) or (input ? 'lieu' and koki_foot.t(input,'lieu') is distinct from m.lieu) then
      perform koki_foot.motif_requis(koki_foot.t(input,'motif'));
      update koki_foot.matchs set date_match=coalesce(koki_foot.ts(input,'date_match'),date_match), lieu=coalesce(koki_foot.t(input,'lieu'),lieu) where id=m.id returning * into m;
-     perform koki_foot.corriger(m.id,a,'programmation',avant,jsonb_build_object('date_match',m.date_match,'lieu',m.lieu),koki_foot.t(input,'motif'));
+     perform koki_foot.corriger(m.id,a,'programmation',avant||jsonb_build_object('api_date_match',m.api_date_match,'api_lieu',m.api_lieu),jsonb_build_object('date_match',m.date_match,'lieu',m.lieu),koki_foot.t(input,'motif'));
+     insert into koki_foot.historique_programmation(match_id,origine,date_match,lieu,motif,acteur) values(m.id,'manuel',m.date_match,m.lieu,left(koki_foot.t(input,'motif'),300),a);
      m:=koki_foot.verrouiller(m.id,a,array['programmation'],koki_foot.t(input,'motif'));
     end if;
     update koki_foot.matchs set commentaire=coalesce(koki_foot.t(input,'commentaire'),commentaire), publie=koki_foot.b(input,'publie',publie) where id=m.id returning * into m;
@@ -467,20 +535,24 @@ declare a uuid; c koki_foot.competitions; e koki_foot.equipes; m koki_foot.match
   return jsonb_build_object('annule',koki_foot.match_json(m),'nouveau',koki_foot.match_json(n2));
 
  elsif command='ajouter_evenement' then
-  -- Un but met aussi le score à jour (but contre son camp : pour l'adversaire ; minute > 90 : prolongation),
+  -- Un but met aussi le score à jour selon sa PÉRIODE (mi-temps : réglementaire ; prolongation : pro_* ; séance : tab_*),
   -- sauf maj_score=false. Match api : motif obligatoire, verrous « événements » (et « score »).
-  perform koki_foot.cles(input,'{match_id,revision,type,minute,minute_add,equipe_id,joueur,joueur2,maj_score,motif}');
+  perform koki_foot.cles(input,'{match_id,revision,type,periode,minute,minute_add,equipe_id,joueur,joueur2,maj_score,motif}');
+  if koki_foot.t(input,'periode') is null then perform koki_foot.echec('Période requise (mi_temps_1, mi_temps_2, prolongation_1, prolongation_2, tirs_au_but)'); end if;
   select * into m from koki_foot.matchs where id=koki_foot.u(input,'match_id') for update; if not found then perform koki_foot.echec('Match introuvable'); end if;
   perform koki_foot.revision(koki_foot.i(input,'revision'),m.revision);
   if m.source='api' then perform koki_foot.motif_requis(koki_foot.t(input,'motif')); end if;
-  insert into koki_foot.evenements(match_id,type,minute,minute_add,equipe_id,joueur,joueur2,source,auteur)
-   values(m.id,koki_foot.t(input,'type'),koki_foot.i(input,'minute'),koki_foot.i(input,'minute_add'),koki_foot.u(input,'equipe_id'),coalesce(koki_foot.t(input,'joueur'),''),coalesce(koki_foot.t(input,'joueur2'),''),'manuel',a)
+  if koki_foot.t(input,'periode')<>all(array['mi_temps_1','mi_temps_2']) and exists(select 1 from koki_foot.competitions where id=m.competition_id and type='Championnat') then
+   perform koki_foot.echec('Pas de prolongation ni de tirs au but en championnat');
+  end if;
+  insert into koki_foot.evenements(match_id,type,periode,minute,minute_add,equipe_id,joueur,joueur2,source,auteur)
+   values(m.id,koki_foot.t(input,'type'),koki_foot.t(input,'periode'),koki_foot.i(input,'minute'),koki_foot.i(input,'minute_add'),koki_foot.u(input,'equipe_id'),coalesce(koki_foot.t(input,'joueur'),''),coalesce(koki_foot.t(input,'joueur2'),''),'manuel',a)
    returning * into v;
   perform koki_foot.corriger(m.id,a,'evenement_ajout','{}',koki_foot.evenement_json(v),koki_foot.t(input,'motif'));
   m:=koki_foot.verrouiller(m.id,a,array['evenements'],koki_foot.t(input,'motif'));
   eff:=koki_foot.effet_but(m,v,1);
   if koki_foot.b(input,'maj_score',true) and eff is not null then
-   m:=koki_foot.appliquer_score(m,a,eff||jsonb_build_object('statut',case when m.statut in ('À venir','Reporté') then 'En direct' else m.statut end,'minute',m.minute),koki_foot.t(input,'motif'));
+   m:=koki_foot.appliquer_score(m,a,eff||jsonb_build_object('statut',case when m.statut in ('À venir','Reporté') then 'En direct' when v.periode='tirs_au_but' and koki_foot.en_jeu(m.statut) then 'Tirs au but' else m.statut end,'minute',m.minute),koki_foot.t(input,'motif'));
   end if;
   return jsonb_build_object('evenement',koki_foot.evenement_json(v),'match',koki_foot.match_json(m)||jsonb_build_object('verrous',koki_foot.verrous_json(m),'coherence',koki_foot.coherence(m)));
 
@@ -566,6 +638,8 @@ begin
  -- Une seule synchronisation à la fois par fournisseur : la seconde attend la fin de la première.
  perform pg_advisory_xact_lock(hashtext('koki_foot_sync:'||f));
  insert into koki_foot.etat_fournisseurs(fournisseur) values(f) on conflict do nothing;
+ -- Origine des changements d'horaire inscrits par le déclencheur (transaction courante seulement).
+ perform set_config('koki_foot.origine','api',true);
 
  if command='references' then
   -- Ce que la synchronisation doit suivre, et si elle doit attendre (panne, quota).
@@ -580,7 +654,7 @@ begin
   perform koki_foot.cles(input,'{fournisseur,operation,code,message,reessayer_apres}');
   code_:=coalesce(koki_foot.t(input,'code'),'autre');
   if code_ not in ('indisponible','quota','authentification','donnees','delai','autre') then perform koki_foot.echec('Code d''erreur invalide'); end if;
-  update koki_foot.etat_fournisseurs set erreurs_consecutives=erreurs_consecutives+1, derniere_erreur=now(), derniere_erreur_code=code_ where fournisseur=f returning * into ef;
+  update koki_foot.etat_fournisseurs set erreurs_consecutives=erreurs_consecutives+1, derniere_erreur=now(), derniere_erreur_code=code_, derniere_tentative=now() where fournisseur=f returning * into ef;
   pause:=coalesce(koki_foot.ts(input,'reessayer_apres'),case code_
    when 'quota' then (date_trunc('day',now() at time zone 'UTC')+interval '1 day') at time zone 'UTC'
    when 'authentification' then now()+interval '24 hours'
@@ -644,11 +718,12 @@ begin
    select * into m from koki_foot.matchs where fournisseur=f and ref_fournisseur=koki_foot.t(x,'ref') for update;
    if not found then
     insert into koki_foot.matchs(competition_id,domicile_id,exterieur_id,date_match,lieu,poule,journee,statut,minute,score_domicile,score_exterieur,pro_domicile,pro_exterieur,tab_domicile,tab_exterieur,
-      source,fournisseur,ref_fournisseur,resultat_source,publie,synchronise_le)
+      source,fournisseur,ref_fournisseur,resultat_source,publie,synchronise_le,api_date_match,api_lieu)
      values(cid,d,ex,koki_foot.ts(x,'date_match'),api_prog->>'lieu',left(coalesce(koki_foot.t(x,'poule'),''),40),left(coalesce(koki_foot.t(x,'journee'),''),40),
       api_statut,koki_foot.i(x,'minute'),koki_foot.i(x,'score_domicile'),koki_foot.i(x,'score_exterieur'),koki_foot.i(x,'pro_domicile'),koki_foot.i(x,'pro_exterieur'),koki_foot.i(x,'tab_domicile'),koki_foot.i(x,'tab_exterieur'),
-      'api',f,koki_foot.t(x,'ref'),'api',true,now()) returning * into m;
-    crees:=crees+1;
+      'api',f,koki_foot.t(x,'ref'),'api',true,now(),(api_prog->>'date_match')::timestamptz,api_prog->>'lieu') returning * into m;
+    insert into koki_foot.historique_programmation(match_id,origine,date_match,lieu) values(m.id,'api',m.api_date_match,m.api_lieu);
+    crees:=crees+1; nouveau:=true;
    else
     l_sc:=m.verrou_manuel or m.verrou_score; l_st:=m.verrou_manuel or m.verrou_statut; l_pr:=m.verrou_manuel or m.verrou_programmation;
     nb:=0;
@@ -660,7 +735,11 @@ begin
      perform koki_foot.signaler_conflit(m.id,'programmation',jsonb_build_object('date_match',m.date_match,'lieu',m.lieu),api_prog); nb:=nb+1;
     end if;
     if nb>0 then verrou:=verrou+1; end if;
-    update koki_foot.matchs set competition_id=cid, domicile_id=d, exterieur_id=ex, poule=left(coalesce(koki_foot.t(x,'poule'),''),40), journee=left(coalesce(koki_foot.t(x,'journee'),''),40),
+    -- Programmation reçue du fournisseur : toujours conservée (même verrouillée), historisée si elle change.
+    if jsonb_build_object('date_match',m.api_date_match,'lieu',m.api_lieu)<>api_prog then
+     insert into koki_foot.historique_programmation(match_id,origine,date_match,lieu) values(m.id,'api',(api_prog->>'date_match')::timestamptz,api_prog->>'lieu');
+    end if;
+    update koki_foot.matchs set api_date_match=(api_prog->>'date_match')::timestamptz, api_lieu=api_prog->>'lieu', competition_id=cid, domicile_id=d, exterieur_id=ex, poule=left(coalesce(koki_foot.t(x,'poule'),''),40), journee=left(coalesce(koki_foot.t(x,'journee'),''),40),
      date_match=case when l_pr then date_match else (api_prog->>'date_match')::timestamptz end, lieu=case when l_pr then lieu else api_prog->>'lieu' end,
      statut=case when l_st then statut else api_statut end,
      minute=case when l_st then minute else koki_foot.i(x,'minute') end,
@@ -677,10 +756,13 @@ begin
      or (not l_pr and jsonb_build_object('date_match',date_match,'lieu',lieu)<>api_prog)
      or (not l_st and (statut,minute) is distinct from (api_statut,koki_foot.i(x,'minute')))
      or (not l_sc and jsonb_build_array(score_domicile,score_exterieur,pro_domicile,pro_exterieur,tab_domicile,tab_exterieur)<>api_score)
-     or (not l_sc and not m.verrou_evenements and resultat_source<>'api'));
-    if found then maj:=maj+1; end if;
+     or (not l_sc and not m.verrou_evenements and resultat_source<>'api')
+     or jsonb_build_object('date_match',api_date_match,'lieu',api_lieu)<>api_prog);
+    nouveau:=found; if found then maj:=maj+1; end if;
    end if;
-   insert into koki_foot.vus_api(match_id,vu_le) values(m.id,now()) on conflict (match_id) do update set vu_le=excluded.vu_le;
+   -- Réponse exploitable pour ce match (ligne valide et traitée) : actualisation ; changement effectif : modification.
+   insert into koki_foot.vus_api(match_id,vu_le,modifie_le) values(m.id,now(),case when nouveau then now() end)
+    on conflict (match_id) do update set vu_le=excluded.vu_le, modifie_le=coalesce(excluded.modifie_le,koki_foot.vus_api.modifie_le);
   exception when others then rejet:=rejet+1; if cardinality(erreurs)<20 then erreurs:=erreurs||('match '||coalesce(koki_foot.t(x,'ref'),'?')||' : '||sqlerrm); end if; end;
  end loop;
 
@@ -700,10 +782,10 @@ begin
     continue;
    end if;
    select id into d from koki_foot.equipes where fournisseur=f and ref_fournisseur=koki_foot.t(x,'equipe_ref');
-   insert into koki_foot.evenements(match_id,type,minute,minute_add,equipe_id,joueur,joueur2,source,cle)
-    values(m.id,koki_foot.t(x,'type'),koki_foot.i(x,'minute'),koki_foot.i(x,'minute_add'),d,left(coalesce(koki_foot.t(x,'joueur'),''),80),left(coalesce(koki_foot.t(x,'joueur2'),''),80),'api',koki_foot.t(x,'cle'))
+   insert into koki_foot.evenements(match_id,type,periode,minute,minute_add,equipe_id,joueur,joueur2,source,cle)
+    values(m.id,koki_foot.t(x,'type'),koki_foot.t(x,'periode'),koki_foot.i(x,'minute'),koki_foot.i(x,'minute_add'),d,left(coalesce(koki_foot.t(x,'joueur'),''),80),left(coalesce(koki_foot.t(x,'joueur2'),''),80),'api',koki_foot.t(x,'cle'))
    on conflict (match_id,cle) do nothing;
-   if found then crees:=crees+1; end if;
+   if found then crees:=crees+1; update koki_foot.vus_api set modifie_le=now() where match_id=m.id; end if;
   exception when others then rejet:=rejet+1; if cardinality(erreurs)<20 then erreurs:=erreurs||('événement : '||sqlerrm); end if; end;
  end loop;
  -- Liste complète fournie pour un match : les événements api absents (but annulé…) sont retirés,
@@ -734,7 +816,9 @@ begin
  exception when others then rejet:=rejet+1; if cardinality(erreurs)<20 then erreurs:=erreurs||('classement : '||sqlerrm); end if; end;
 
  st:=case when rejet=0 then 'ok' when rejet<lus then 'partiel' else 'erreur' end;
- update koki_foot.etat_fournisseurs set derniere_reussite=case when st<>'erreur' then now() else derniere_reussite end,
+ update koki_foot.etat_fournisseurs set derniere_tentative=now(), derniere_reussite=case when st<>'erreur' then now() else derniere_reussite end,
+  derniere_modification=case when crees+maj>0 then now() else derniere_modification end,
+  derniere_erreur=case when st='erreur' then now() else derniere_erreur end, derniere_erreur_code=case when st='erreur' then 'donnees' else derniere_erreur_code end,
   erreurs_consecutives=case when st<>'erreur' then 0 else erreurs_consecutives+1 end, pause_jusqu_a=case when st<>'erreur' then null else pause_jusqu_a end,
   quota_restant=coalesce(koki_foot.i(input,'quota_restant'),quota_restant) where fournisseur=f;
  insert into koki_foot.synchronisations(fournisseur,operation,statut,code,lus,crees,mis_a_jour,ignores_verrou,rejetes,message)

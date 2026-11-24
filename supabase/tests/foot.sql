@@ -112,12 +112,12 @@ select current_user as role_courant \gset
 reset role;
 select t.ok((select count(*) from t.diffusions where topic='koki-foot' and evenement='match' and not prive)=1,'Realtime : coup d''envoi diffusé sur le canal public koki-foot');
 set role :role_courant;
-select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'m1','revision',t.rev(:'m1'),'type','but','minute',12,'equipe_id',:'eq1','joueur','Moussa Fall'));
+select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'m1','revision',t.rev(:'m1'),'type','but','periode','mi_temps_1','minute',12,'equipe_id',:'eq1','joueur','Moussa Fall'));
 select current_user as role_courant \gset
 reset role;
 select t.ok((select score_domicile=1 and score_exterieur=0 from koki_foot.matchs where id=:'m1'),'but : score 1–0 mis à jour');
 set role :role_courant;
-select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'m1','revision',t.rev(:'m1'),'type','but_csc','minute',30,'equipe_id',:'eq1','joueur','Ibra Diop'));
+select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'m1','revision',t.rev(:'m1'),'type','but_csc','periode','mi_temps_1','minute',30,'equipe_id',:'eq1','joueur','Ibra Diop'));
 select current_user as role_courant \gset
 reset role;
 select t.ok((select score_domicile=1 and score_exterieur=1 from koki_foot.matchs where id=:'m1'),'but contre son camp : compté pour l''adversaire (1–1)');
@@ -214,7 +214,7 @@ $$ insert into t.diffusions(evenement,topic,prive,charge) values(event,topic,pri
 
 -- ═════ 5. Import automatique sans doublons ═════
 set role service_role; select t.as_service();
-\set lot '{"fournisseur":"api-football","operation":"test","competitions":[{"ref":"L1SN","nom":"Ligue 1 Sénégal","saison":"2025","portee":"Sénégal"}],"equipes":[{"ref":"T1","nom":"ASC Jaraaf","logo_url":"https://media.example.com/t1.png"},{"ref":"T2","nom":"Génération Foot"},{"ref":"T3","nom":"Teungueth FC"}],"inscriptions":[{"competition_ref":"L1SN","equipe_ref":"T1"},{"competition_ref":"L1SN","equipe_ref":"T2"}],"matchs":[{"ref":"F100","competition_ref":"L1SN","domicile_ref":"T1","exterieur_ref":"T2","date_match":"2026-11-24T16:00:00Z","statut":"En direct","minute":20,"score_domicile":1,"score_exterieur":0},{"ref":"F101","competition_ref":"L1SN","domicile_ref":"T3","exterieur_ref":"T1","date_match":"2026-11-30T16:00:00Z","statut":"À venir"}],"evenements":[{"match_ref":"F100","cle":"F100|but|12|T1|Diallo","type":"but","minute":12,"equipe_ref":"T1","joueur":"A. Diallo"}],"classements":[{"competition_ref":"L1SN","equipe_ref":"T1","rang":1,"joues":10,"gagnes":7,"nuls":2,"perdus":1,"buts_pour":15,"buts_contre":5,"points":23,"forme":"VVNVD"},{"competition_ref":"L1SN","equipe_ref":"T2","rang":2,"joues":10,"points":20}]}'
+\set lot '{"fournisseur":"api-football","operation":"test","competitions":[{"ref":"L1SN","nom":"Ligue 1 Sénégal","saison":"2025","portee":"Sénégal"}],"equipes":[{"ref":"T1","nom":"ASC Jaraaf","logo_url":"https://media.example.com/t1.png"},{"ref":"T2","nom":"Génération Foot"},{"ref":"T3","nom":"Teungueth FC"}],"inscriptions":[{"competition_ref":"L1SN","equipe_ref":"T1"},{"competition_ref":"L1SN","equipe_ref":"T2"}],"matchs":[{"ref":"F100","competition_ref":"L1SN","domicile_ref":"T1","exterieur_ref":"T2","date_match":"2026-11-24T16:00:00Z","statut":"En direct","minute":20,"score_domicile":1,"score_exterieur":0},{"ref":"F101","competition_ref":"L1SN","domicile_ref":"T3","exterieur_ref":"T1","date_match":"2026-11-30T16:00:00Z","statut":"À venir"}],"evenements":[{"match_ref":"F100","cle":"F100|but|12|T1|Diallo","type":"but","periode":"mi_temps_1","minute":12,"equipe_ref":"T1","joueur":"A. Diallo"}],"classements":[{"competition_ref":"L1SN","equipe_ref":"T1","rang":1,"joues":10,"gagnes":7,"nuls":2,"perdus":1,"buts_pour":15,"buts_contre":5,"points":23,"forme":"VVNVD"},{"competition_ref":"L1SN","equipe_ref":"T2","rang":2,"joues":10,"points":20}]}'
 select t.sync('importer',:'lot') as r1 \gset
 select t.ok((:'r1'::jsonb->>'statut')='ok' and (:'r1'::jsonb->>'crees')::int=7,'premier import : 1 compétition, 3 équipes, 2 matchs, 1 événement');
 select t.sync('importer',:'lot') as r2 \gset
@@ -274,7 +274,7 @@ reset role;
 select t.ok((select count(*) from koki_foot.corrections where match_id=:'f100' and action='verrou')=1,'verrouillage journalisé');
 set role :role_courant;
 set role service_role; select t.as_service();
-select t.sync('importer','{"fournisseur":"api-football","operation":"test-verrou","matchs":[{"ref":"F100","competition_ref":"L1SN","domicile_ref":"T1","exterieur_ref":"T2","date_match":"2026-11-24T16:00:00Z","statut":"En direct","minute":30,"score_domicile":1,"score_exterieur":0}],"evenements":[{"match_ref":"F100","cle":"F100|but|28|T2|Sarr","type":"but","minute":28,"equipe_ref":"T2","joueur":"Sarr"}]}') as r4 \gset
+select t.sync('importer','{"fournisseur":"api-football","operation":"test-verrou","matchs":[{"ref":"F100","competition_ref":"L1SN","domicile_ref":"T1","exterieur_ref":"T2","date_match":"2026-11-24T16:00:00Z","statut":"En direct","minute":30,"score_domicile":1,"score_exterieur":0}],"evenements":[{"match_ref":"F100","cle":"F100|but|28|T2|Sarr","type":"but","periode":"mi_temps_1","minute":28,"equipe_ref":"T2","joueur":"Sarr"}]}') as r4 \gset
 reset role;
 select current_user as role_courant \gset
 reset role;
@@ -298,7 +298,7 @@ select t.ok((select statut='Terminé' and score_exterieur=1 and not verrou_manue
 set role :role_courant;
 -- Liste complète d'événements : but annulé (VAR) retiré, sans doublon.
 set role service_role; select t.as_service();
-select t.sync('importer','{"fournisseur":"api-football","operation":"test-complet","evenements":[{"match_ref":"F100","cle":"F100|but|28|T2|Sarr","type":"but","minute":28,"equipe_ref":"T2","joueur":"Sarr"}],"evenements_complets":["F100"]}');
+select t.sync('importer','{"fournisseur":"api-football","operation":"test-complet","evenements":[{"match_ref":"F100","cle":"F100|but|28|T2|Sarr","type":"but","periode":"mi_temps_1","minute":28,"equipe_ref":"T2","joueur":"Sarr"}],"evenements_complets":["F100"]}');
 reset role;
 select current_user as role_courant \gset
 reset role;
@@ -331,11 +331,11 @@ reset role;
 select t.adm('enregistrer_competition','{"nom":"Coupe de Koki 2026","type":"Coupe","portee":"Koki","publie":true}')->>'id' as coupe \gset
 select t.adm('enregistrer_match',jsonb_build_object('competition_id',:'coupe','domicile_id',:'eq1','exterieur_id',:'eq3','date_match',(now()-interval '2 hours')::text,'publie',true))->>'id' as cm \gset
 select t.adm('score',jsonb_build_object('id',:'cm','revision',t.rev(:'cm'),'statut','En direct','minute',1));
-select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'cm','revision',t.rev(:'cm'),'type','but','minute',40,'equipe_id',:'eq1','joueur','Fall'));
-select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'cm','revision',t.rev(:'cm'),'type','penalty','minute',88,'equipe_id',:'eq3','joueur','Ndiaye'));
+select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'cm','revision',t.rev(:'cm'),'type','but','periode','mi_temps_1','minute',40,'equipe_id',:'eq1','joueur','Fall'));
+select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'cm','revision',t.rev(:'cm'),'type','penalty','periode','mi_temps_2','minute',88,'equipe_id',:'eq3','joueur','Ndiaye'));
 select t.adm('score',jsonb_build_object('id',:'cm','revision',t.rev(:'cm'),'statut','Prolongations','minute',91));
-select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'cm','revision',t.rev(:'cm'),'type','but','minute',105,'equipe_id',:'eq3','joueur','Sow'));
-select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'cm','revision',t.rev(:'cm'),'type','but_csc','minute',118,'equipe_id',:'eq3','joueur','Ba'));
+select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'cm','revision',t.rev(:'cm'),'type','but','periode','prolongation_1','minute',105,'equipe_id',:'eq3','joueur','Sow'));
+select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'cm','revision',t.rev(:'cm'),'type','but_csc','periode','prolongation_2','minute',118,'equipe_id',:'eq3','joueur','Ba'));
 reset role;
 select t.ok((select (score_domicile,score_exterieur,pro_domicile,pro_exterieur)=(1,1,1,1) from koki_foot.matchs where id=:'cm'),'prolongation : réglementaire 1–1 et prolongation 1–1 dans des champs distincts');
 select t.ok(((select koki_foot.coherence(m) from koki_foot.matchs m where id=:'cm')->>'etat')='coherent','cohérence buts ↔ score (penalty, csc, prolongation)');
@@ -395,8 +395,8 @@ select t.err(format($$select t.adm('rejouer','{"id":"%s","revision":%s,"date_mat
 
 -- ═════ 11. Correction d'un but et cohérence du classement ═════
 select t.adm('enregistrer_match',jsonb_build_object('competition_id',:'comp','domicile_id',:'eq2','exterieur_id',:'eq3','date_match',(now()-interval '3 hours')::text,'publie',true))->>'id' as mc \gset
-select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'mc','revision',t.rev(:'mc'),'type','but','minute',10,'equipe_id',:'eq2','joueur','A'))->'evenement'->>'id' as but1 \gset
-select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'mc','revision',t.rev(:'mc'),'type','but','minute',20,'equipe_id',:'eq2','joueur','B'));
+select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'mc','revision',t.rev(:'mc'),'type','but','periode','mi_temps_1','minute',10,'equipe_id',:'eq2','joueur','A'))->'evenement'->>'id' as but1 \gset
+select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'mc','revision',t.rev(:'mc'),'type','but','periode','mi_temps_1','minute',20,'equipe_id',:'eq2','joueur','B'));
 select t.adm('score',jsonb_build_object('id',:'mc','revision',t.rev(:'mc'),'statut','Terminé'));
 reset role;
 select (r->>'points')::int as pts_eq2_avant from jsonb_array_elements(koki_foot.classement(:'comp','')) r where r->'equipe'->>'id'=:'eq2' \gset
@@ -415,7 +415,7 @@ select t.ok(((select koki_foot.coherence(m) from koki_foot.matchs m where id=:'m
 
 -- ═════ 12. Verrous indépendants, conflits visibles, annulation d'un événement api ═════
 set role service_role; select t.as_service();
-select t.sync('importer','{"fournisseur":"api-football","operation":"v12","matchs":[{"ref":"F300","competition_ref":"L1SN","domicile_ref":"T1","exterieur_ref":"T3","date_match":"2026-11-24T18:00:00Z","statut":"En direct","minute":30,"score_domicile":1,"score_exterieur":0}],"evenements":[{"match_ref":"F300","cle":"F300|but|25|T1|Diouf","type":"but","minute":25,"equipe_ref":"T1","joueur":"Diouf"}]}');
+select t.sync('importer','{"fournisseur":"api-football","operation":"v12","matchs":[{"ref":"F300","competition_ref":"L1SN","domicile_ref":"T1","exterieur_ref":"T3","date_match":"2026-11-24T18:00:00Z","statut":"En direct","minute":30,"score_domicile":1,"score_exterieur":0}],"evenements":[{"match_ref":"F300","cle":"F300|but|25|T1|Diouf","type":"but","periode":"mi_temps_1","minute":25,"equipe_ref":"T1","joueur":"Diouf"}]}');
 reset role;
 select id as f300 from koki_foot.matchs where ref_fournisseur='F300' \gset
 :E
@@ -423,7 +423,7 @@ select t.adm('retirer_evenement',jsonb_build_object('id',t.evt(:'f300'),'motif',
 reset role;
 select t.ok((select verrou_evenements and verrou_score and verrou_manuel and not verrou_statut and resultat_source='correction' and score_domicile=0 from koki_foot.matchs where id=:'f300'),'annulation d''un but api : verrous événements + score, score 0–0');
 set role service_role; select t.as_service();
-select t.sync('importer','{"fournisseur":"api-football","operation":"v12b","matchs":[{"ref":"F300","competition_ref":"L1SN","domicile_ref":"T1","exterieur_ref":"T3","date_match":"2026-11-24T18:00:00Z","statut":"En direct","minute":35,"score_domicile":1,"score_exterieur":0}],"evenements":[{"match_ref":"F300","cle":"F300|but|25|T1|Diouf","type":"but","minute":25,"equipe_ref":"T1","joueur":"Diouf"}]}') as r12 \gset
+select t.sync('importer','{"fournisseur":"api-football","operation":"v12b","matchs":[{"ref":"F300","competition_ref":"L1SN","domicile_ref":"T1","exterieur_ref":"T3","date_match":"2026-11-24T18:00:00Z","statut":"En direct","minute":35,"score_domicile":1,"score_exterieur":0}],"evenements":[{"match_ref":"F300","cle":"F300|but|25|T1|Diouf","type":"but","periode":"mi_temps_1","minute":25,"equipe_ref":"T1","joueur":"Diouf"}]}') as r12 \gset
 reset role;
 select t.ok((select count(*) from koki_foot.evenements where match_id=:'f300')=0,'but annulé : non réintroduit par la synchronisation');
 select t.ok((select score_domicile=0 from koki_foot.matchs where id=:'f300'),'score corrigé conservé');
@@ -521,6 +521,204 @@ select t.ok(not exists(select 1 from (select charge->>'id' id, (charge->>'revisi
 select t.ok(not exists(select 1 from t.diffusions where charge::text ~* 'joueur|email|auteur|acteur|motif|commentaire'),'Realtime : aucune donnée personnelle ni motif diffusés');
 select t.ok(not exists(select 1 from t.diffusions where prive or topic<>'koki-foot'),'Realtime : canal public unique koki-foot');
 select t.ok((select count(*) from t.diffusions where evenement='evenement' and charge ? 'revision')=(select count(*) from t.diffusions where evenement='evenement'),'Realtime : événements porteurs de la révision du match');
+
+-- ════════════════ TESTS v3 (revue phase 2) ════════════════
+reset role;
+-- ═════ 17. Périodes explicites ═════
+:E
+select t.adm('enregistrer_competition','{"nom":"Coupe des quartiers","type":"Coupe","portee":"Koki","publie":true}')->>'id' as cq \gset
+select t.adm('enregistrer_match',jsonb_build_object('competition_id',:'cq','domicile_id',:'eq1','exterieur_id',:'eq2','date_match',(now()-interval '150 minutes')::text,'publie',true))->>'id' as pm \gset
+select t.adm('score',jsonb_build_object('id',:'pm','revision',t.rev(:'pm'),'statut','En direct','minute',1));
+select t.err(format($$select t.adm('ajouter_evenement','{"match_id":"%s","revision":%s,"type":"but","minute":10,"equipe_id":"%s"}')$$,:'pm',t.rev(:'pm'),:'eq1'),'Période requise','événement sans période refusé');
+-- 90+5 en 2e mi-temps saisi « 95 » : réglementaire (l'ancienne règle minute>90 l'aurait compté en prolongation).
+select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'pm','revision',t.rev(:'pm'),'type','but','periode','mi_temps_2','minute',95,'equipe_id',:'eq1','joueur','Diop'));
+select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'pm','revision',t.rev(:'pm'),'type','but','periode','mi_temps_2','minute',90,'minute_add',4,'equipe_id',:'eq2','joueur','Kane'));
+reset role;
+select t.ok((select (score_domicile,score_exterieur)=(1,1) and pro_domicile is null from koki_foot.matchs where id=:'pm'),'période explicite : but à « 95 » en 2e mi-temps = score réglementaire');
+select t.ok((select minute=90 and minute_add=4 from koki_foot.evenements where match_id=:'pm' and joueur='Kane'),'minute affichée et temps additionnel conservés séparément');
+:E
+select t.adm('score',jsonb_build_object('id',:'pm','revision',t.rev(:'pm'),'statut','Prolongations','minute',91));
+select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'pm','revision',t.rev(:'pm'),'type','but','periode','prolongation_1','minute',91,'equipe_id',:'eq2','joueur','Gueye'));
+select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'pm','revision',t.rev(:'pm'),'type','penalty','periode','prolongation_2','minute',120,'minute_add',2,'equipe_id',:'eq1','joueur','Diop'));
+reset role;
+select t.ok((select (score_domicile,score_exterieur,pro_domicile,pro_exterieur)=(1,1,1,1) from koki_foot.matchs where id=:'pm'),'prolongations 1 et 2 : buts dans pro_*');
+-- Tirs au but : séance distincte, jamais comptée dans le score du match.
+:E
+select t.err(format($$select t.adm('ajouter_evenement','{"match_id":"%s","revision":%s,"type":"but","periode":"tirs_au_but","equipe_id":"%s"}')$$,:'pm',t.rev(:'pm'),:'eq1'),'check','un « but » pendant la séance de tirs au but est refusé');
+select t.err(format($$select t.adm('ajouter_evenement','{"match_id":"%s","revision":%s,"type":"tab_reussi","periode":"prolongation_2","equipe_id":"%s"}')$$,:'pm',t.rev(:'pm'),:'eq1'),'check','tir au but hors séance refusé');
+select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'pm','revision',t.rev(:'pm'),'type','tab_reussi','periode','tirs_au_but','equipe_id',:'eq1','joueur','Diop'));
+select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'pm','revision',t.rev(:'pm'),'type','tab_manque','periode','tirs_au_but','equipe_id',:'eq2','joueur','Kane'));
+select t.adm('ajouter_evenement',jsonb_build_object('match_id',:'pm','revision',t.rev(:'pm'),'type','tab_reussi','periode','tirs_au_but','equipe_id',:'eq1','joueur','Fall'));
+reset role;
+select t.ok((select statut='Tirs au but' and (tab_domicile,tab_exterieur)=(2,0) and (score_domicile,score_exterieur,pro_domicile,pro_exterieur)=(1,1,1,1) from koki_foot.matchs where id=:'pm'),'tirs au but : 2–0 en séance, score du match inchangé (1–1, a.p. 1–1)');
+select t.ok(((select koki_foot.coherence(m) from koki_foot.matchs m where id=:'pm')->>'etat')='coherent','cohérence par période (réglementaire, prolongation, séance)');
+select t.ok(((select koki_foot.coherence(m) from koki_foot.matchs m where id=:'pm')->'buts_evenements'->'tirs_au_but')='[2,0]'::jsonb,'cohérence : tirs au but comptés à part');
+select t.ok((select array_agg(e->>'periode') from jsonb_array_elements(public.koki_foot_public('match',jsonb_build_object('id',:'pm'))->'evenements') e)
+ =array['mi_temps_2','mi_temps_2','prolongation_1','prolongation_2','tirs_au_but','tirs_au_but','tirs_au_but'],'événements ordonnés par période puis minute');
+select id as tab_fall from koki_foot.evenements where match_id=:'pm' and joueur='Fall' and periode='tirs_au_but' \gset
+:E
+select t.adm('retirer_evenement',jsonb_build_object('id',:'tab_fall','motif','Tir à retirer : gardien avancé, à retirer'));
+reset role;
+select t.ok((select (tab_domicile,tab_exterieur)=(1,0) from koki_foot.matchs where id=:'pm'),'annulation d''un tir au but : séance 1–0, score du match intact');
+:E
+select t.err(format($$select t.adm('ajouter_evenement','{"match_id":"%s","revision":%s,"type":"but","periode":"prolongation_1","minute":95,"equipe_id":"%s"}')$$,:'m2',t.rev(:'m2'),:'eq2'),'championnat','championnat : événement de prolongation refusé');
+reset role;
+
+-- ═════ 18. VAR et tirs au but venant du fournisseur ═════
+set role service_role; select t.as_service();
+select t.sync('importer','{"fournisseur":"api-football","operation":"var","competitions":[{"ref":"CUPSN","nom":"Coupe du Sénégal","type":"Coupe","portee":"Sénégal"}],"matchs":[{"ref":"F400","competition_ref":"CUPSN","domicile_ref":"T1","exterieur_ref":"T2","date_match":"2026-11-24T15:00:00Z","statut":"En direct","minute":30,"score_domicile":1,"score_exterieur":0}],"evenements":[{"match_ref":"F400","cle":"F400|but|28","type":"but","periode":"mi_temps_1","minute":28,"equipe_ref":"T1","joueur":"Diallo"}]}');
+-- VAR : le fournisseur retire le but et corrige le score.
+select t.sync('importer','{"fournisseur":"api-football","operation":"var2","matchs":[{"ref":"F400","competition_ref":"CUPSN","domicile_ref":"T1","exterieur_ref":"T2","date_match":"2026-11-24T15:00:00Z","statut":"En direct","minute":33,"score_domicile":0,"score_exterieur":0}],"evenements":[],"evenements_complets":["F400"]}');
+reset role;
+select t.ok((select score_domicile=0 from koki_foot.matchs where ref_fournisseur='F400') and (select count(*) from koki_foot.evenements e join koki_foot.matchs m on m.id=e.match_id where m.ref_fournisseur='F400')=0,'VAR fournisseur : but retiré et score corrigé');
+select t.ok(((select koki_foot.coherence(m) from koki_foot.matchs m where ref_fournisseur='F400')->>'etat')='aucun_evenement','VAR : plus d''événement de but');
+set role service_role; select t.as_service();
+select t.sync('importer','{"fournisseur":"api-football","operation":"tab","matchs":[{"ref":"F400","competition_ref":"CUPSN","domicile_ref":"T1","exterieur_ref":"T2","date_match":"2026-11-24T15:00:00Z","statut":"Terminé","score_domicile":0,"score_exterieur":0,"pro_domicile":0,"pro_exterieur":0,"tab_domicile":4,"tab_exterieur":2}],"evenements":[{"match_ref":"F400","cle":"F400|tab|1","type":"tab_reussi","periode":"tirs_au_but","equipe_ref":"T1"},{"match_ref":"F400","cle":"F400|tab|2","type":"tab_manque","periode":"tirs_au_but","equipe_ref":"T2"},{"match_ref":"F400","cle":"F400|tab|x","type":"but","periode":"tirs_au_but","equipe_ref":"T2"},{"match_ref":"F400","cle":"F400|sansperiode","type":"but","minute":5,"equipe_ref":"T2"}]}') as rt \gset
+reset role;
+select t.ok((select (tab_domicile,tab_exterieur,score_domicile)=(4,2,0) from koki_foot.matchs where ref_fournisseur='F400'),'tirs au but du fournisseur : séance 4–2, score du match 0–0');
+select t.ok((:'rt'::jsonb->>'rejetes')::int=2,'événements du fournisseur incohérents (but en séance, sans période) rejetés');
+
+-- ═════ 19. Conflits multiples, deux verrous simultanés, résolution sélective ═════
+set role service_role; select t.as_service();
+select t.sync('importer','{"fournisseur":"api-football","operation":"multi","matchs":[{"ref":"F500","competition_ref":"L1SN","domicile_ref":"T2","exterieur_ref":"T1","date_match":"2026-12-10T16:00:00Z","lieu":"Stade A","statut":"En direct","minute":10,"score_domicile":0,"score_exterieur":0}]}');
+reset role; select id as f500 from koki_foot.matchs where ref_fournisseur='F500' \gset
+:E
+select t.adm('score',jsonb_build_object('id',:'f500','revision',t.rev(:'f500'),'statut','En direct','minute',12,'score_domicile',1,'score_exterieur',0,'motif','But vu au stade'));
+select t.adm('enregistrer_match',jsonb_build_object('id',:'f500','revision',t.rev(:'f500'),'date_match','2026-12-10T17:00:00Z','motif','Coup d''envoi décalé par la ligue'));
+reset role;
+select t.ok((select verrou_score and verrou_programmation and not verrou_statut and not verrou_evenements and verrou_manuel from koki_foot.matchs where id=:'f500'),'deux verrous actifs simultanément (score + programmation)');
+set role service_role; select t.as_service();
+select t.sync('importer','{"fournisseur":"api-football","operation":"multi2","matchs":[{"ref":"F500","competition_ref":"L1SN","domicile_ref":"T2","exterieur_ref":"T1","date_match":"2026-12-10T16:30:00Z","lieu":"Stade B","statut":"Mi-temps","score_domicile":0,"score_exterieur":0}]}');
+reset role;
+select t.ok((select count(*) from koki_foot.conflits where match_id=:'f500' and not resolu)=3,'conflits multiples : score, statut (verrou global) et programmation');
+select t.ok((select score_domicile=1 and date_match='2026-12-10T17:00:00Z' and lieu='Stade A' and statut='En direct' from koki_foot.matchs where id=:'f500'),'valeurs locales conservées');
+select t.ok((select api_date_match='2026-12-10T16:30:00Z' and api_lieu='Stade B' from koki_foot.matchs where id=:'f500'),'valeur du fournisseur conservée à part (api_date_match, api_lieu)');
+select id as k_score from koki_foot.conflits where match_id=:'f500' and champ='score' and not resolu \gset
+select id as k_prog from koki_foot.conflits where match_id=:'f500' and champ='programmation' and not resolu \gset
+:E
+select t.adm('resoudre_conflit',jsonb_build_object('id',:k_score,'decision','accepter_api','motif','Le fournisseur a raison'));
+reset role;
+select t.ok((select not verrou_score and verrou_programmation and verrou_manuel from koki_foot.matchs where id=:'f500'),'résoudre un conflit ne retire pas les autres verrous');
+select t.ok((select not resolu from koki_foot.conflits where id=:k_prog),'les autres conflits restent ouverts');
+set role service_role; select t.as_service();
+select t.sync('importer','{"fournisseur":"api-football","operation":"multi3","matchs":[{"ref":"F500","competition_ref":"L1SN","domicile_ref":"T2","exterieur_ref":"T1","date_match":"2026-12-10T16:30:00Z","lieu":"Stade B","statut":"Mi-temps","score_domicile":0,"score_exterieur":0}]}');
+reset role;
+select t.ok((select score_domicile=1 and date_match='2026-12-10T17:00:00Z' from koki_foot.matchs where id=:'f500'),'verrou global encore actif : le score reste protégé tant qu''un autre verrou existe');
+:E
+select t.adm('resoudre_conflit',jsonb_build_object('id',:k_prog,'decision','garder','motif','Horaire officiel de la ligue'));
+select t.adm('deverrouiller',jsonb_build_object('id',:'f500','revision',t.rev(:'f500'),'verrous','["statut"]'::jsonb,'motif','Statut au fournisseur'));
+reset role;
+select t.ok((select verrou_manuel and verrou_programmation and not verrou_statut from koki_foot.matchs where id=:'f500'),'« garder » : verrou de programmation maintenu');
+:E
+select t.adm('deverrouiller',jsonb_build_object('id',:'f500','revision',t.rev(:'f500'),'verrous','["score"]'::jsonb,'motif','Rien à garder sur le score'));
+reset role;
+select t.ok((select verrou_manuel and verrou_programmation from koki_foot.matchs where id=:'f500'),'verrou global maintenu tant que la programmation est verrouillée');
+
+-- ═════ 20. Programmation : historique et changements d'horaire ═════
+select t.ok((select array_agg(origine order by id) from koki_foot.historique_programmation where match_id=:'f500')=array['api','manuel','api'],'historique : valeur fournisseur, correction manuelle, nouvelle valeur fournisseur');
+select t.ok((select motif ~ 'décalé' and acteur=:'editeur' from koki_foot.historique_programmation where match_id=:'f500' and origine='manuel'),'historique : motif et auteur de la correction');
+select t.ok((select count(*)=1 and min(origine)='manuel' and min(nouvelle)='2026-12-10T17:00:00Z' from koki_foot.changements_horaire where match_id=:'f500'),'changement d''horaire manuel inscrit une fois (fournisseur ignoré : verrouillé)');
+set role service_role; select t.as_service();
+select t.sync('importer','{"fournisseur":"api-football","operation":"horaire","matchs":[{"ref":"F202","competition_ref":"L1SN","domicile_ref":"T2","exterieur_ref":"T3","date_match":"2026-12-02T19:00:00Z","statut":"À venir"}]}');
+select t.sync('importer','{"fournisseur":"api-football","operation":"horaire-bis","matchs":[{"ref":"F202","competition_ref":"L1SN","domicile_ref":"T2","exterieur_ref":"T3","date_match":"2026-12-02T19:00:00Z","statut":"À venir"}]}');
+reset role;
+select t.ok((select count(*)=1 and min(origine)='api' from koki_foot.changements_horaire c join koki_foot.matchs m on m.id=c.match_id where m.ref_fournisseur='F202' and c.nouvelle='2026-12-02T19:00:00Z'),'changement d''horaire du fournisseur inscrit une seule fois (import répété)');
+:E
+select t.adm('enregistrer_match',jsonb_build_object('id',:'m2','revision',t.rev(:'m2'),'publie',false));
+select t.adm('enregistrer_match',jsonb_build_object('id',:'m2','revision',t.rev(:'m2'),'date_match',(now()+interval '9 days')::text));
+reset role;
+select t.ok(not exists(select 1 from koki_foot.changements_horaire where match_id=:'m2'),'match non publié : pas de changement d''horaire à notifier');
+:E
+select t.ok((t.adm('programmation',jsonb_build_object('match_id',:'f500'))->'fournisseur'->>'lieu')='Stade B','administration : valeur publiée et valeur du fournisseur consultables');
+reset role;
+
+-- ═════ 21. Fraîcheur configurable et état des sources ═════
+:E
+select t.err($$select t.adm('regler_source','{"fournisseur":"api-football","seuil_ancien_s":600}')$$,'double authentification','éditeur : réglage des seuils refusé');
+set role authenticated; select t.as_user(:'super','aal2');
+select t.err($$select t.adm('regler_source','{"fournisseur":"api-football","seuil_ancien_s":30}')$$,'check','seuil hors bornes refusé');
+reset role;
+update koki_foot.vus_api set vu_le=now()-interval '8 minutes' where match_id=(select id from koki_foot.matchs where ref_fournisseur='F202');
+update koki_foot.matchs set statut='En direct', minute=60, score_domicile=0, score_exterieur=0 where ref_fournisseur='F202';
+select t.ok((select koki_foot.fraicheur(m)->>'etat' from koki_foot.matchs m where ref_fournisseur='F202')='ancien','seuil 5 min : vu il y a 8 min = ancien');
+set role authenticated; select t.as_user(:'super','aal2');
+select t.adm('regler_source','{"fournisseur":"api-football","seuil_ancien_s":600}');
+reset role;
+select t.ok((select koki_foot.fraicheur(m)->>'etat' from koki_foot.matchs m where ref_fournisseur='F202')='a_jour','seuil réglé à 10 min : vu il y a 8 min = à jour');
+select t.ok((select koki_foot.fraicheur(m) ?& array['derniere_actualisation','derniere_modification','etat_source','source'] from koki_foot.matchs m where ref_fournisseur='F202'),'fraîcheur : dernière actualisation, dernière modification, état de la source');
+-- Ligne rejetée : pas d'actualisation.
+select vu_le as vu_avant from koki_foot.vus_api where match_id=(select id from koki_foot.matchs where ref_fournisseur='F202') \gset
+set role service_role; select t.as_service();
+select t.sync('importer','{"fournisseur":"api-football","operation":"rejet","matchs":[{"ref":"F202","competition_ref":"L1SN","domicile_ref":"T2","exterieur_ref":"T3","date_match":"2026-12-02T19:00:00Z","statut":"Terminé"}]}') as rj \gset
+reset role;
+select t.ok((:'rj'::jsonb->>'statut')='erreur','réponse inexploitable : synchronisation en erreur');
+select t.ok((select vu_le=:'vu_avant'::timestamptz from koki_foot.vus_api where match_id=(select id from koki_foot.matchs where ref_fournisseur='F202')),'ligne rejetée : vus_api non actualisé');
+select t.ok((select derniere_tentative>derniere_reussite and derniere_erreur_code='donnees' from koki_foot.etat_fournisseurs where fournisseur='api-football'),'tentative notée, réussite non');
+select t.ok((select koki_foot.etat_source(f) from koki_foot.etat_fournisseurs f where fournisseur='api-football')='degrade','état de la source : dégradé');
+-- Réponse exploitable sans changement : actualisation oui, modification non.
+select modifie_le as mod_avant from koki_foot.vus_api where match_id=(select id from koki_foot.matchs where ref_fournisseur='F202') \gset
+set role service_role; select t.as_service();
+select t.sync('importer','{"fournisseur":"api-football","operation":"stable","matchs":[{"ref":"F202","competition_ref":"L1SN","domicile_ref":"T2","exterieur_ref":"T3","date_match":"2026-12-02T19:00:00Z","statut":"En direct","minute":60,"score_domicile":0,"score_exterieur":0}]}');
+reset role;
+select t.ok((select vu_le>:'vu_avant'::timestamptz and modifie_le is not distinct from :'mod_avant'::timestamptz from koki_foot.vus_api where match_id=(select id from koki_foot.matchs where ref_fournisseur='F202')),'réponse sans changement : actualisée, non modifiée');
+select t.ok((select koki_foot.etat_source(f) from koki_foot.etat_fournisseurs f where fournisseur='api-football')='ok','état de la source : ok après réussite');
+update koki_foot.etat_fournisseurs set derniere_reussite=now()-interval '2 hours', derniere_tentative=now()-interval '1 minute' where fournisseur='api-football';
+select t.ok((select koki_foot.etat_source(f) from koki_foot.etat_fournisseurs f where fournisseur='api-football')='hors_service','état de la source : hors service (aucune réussite depuis 3 seuils)');
+select t.ok(coalesce((select bool_and(e ?& array['fournisseur','derniere_actualisation','etat'] and (select count(*) from jsonb_object_keys(e))=3) from jsonb_array_elements(public.koki_foot_public('sources')) e),false),'sources publiques : 3 champs, aucun secret ni compteur interne');
+
+-- ═════ 22. Fuseaux horaires ═════
+:E
+select t.adm('enregistrer_match',jsonb_build_object('competition_id',:'comp','domicile_id',:'eq1','exterieur_id',:'eq3','date_match','2026-12-05T18:00:00+01:00','publie',true))->>'id' as tz \gset
+reset role;
+select t.ok((select date_match='2026-12-05T17:00:00Z' from koki_foot.matchs where id=:'tz'),'heure saisie avec décalage (+01:00) convertie en UTC');
+select t.ok((select to_char(date_match at time zone 'Africa/Dakar','HH24:MI') from koki_foot.matchs where id=:'tz')='17:00','heure de Koki (Africa/Dakar = UTC) : 17:00');
+select t.ok((public.koki_foot_public('matchs',jsonb_build_object('competition_id',:'comp'))->-1->>'date_match') ~ '\+00:00$|Z$','dates publiques en ISO 8601 avec fuseau');
+:E
+select t.err(format($$select t.adm('enregistrer_match','{"competition_id":"%s","domicile_id":"%s","exterieur_id":"%s","date_match":"demain 18h"}')$$,:'comp',:'eq1',:'eq3'),'Date invalide','date ambiguë refusée');
+reset role;
+set timezone='America/New_York';
+select t.ok((select date_match='2026-12-05T17:00:00Z' from koki_foot.matchs where id=:'tz') and (public.koki_foot_public('matchs',jsonb_build_object('competition_id',:'comp'))::text like '%2026-12-05T17:00:00+00:00%' or (public.koki_foot_public('matchs',jsonb_build_object('competition_id',:'comp'))::text like '%2026-12-05T12:00:00-05:00%')),'fuseau de session différent : même instant');
+reset timezone;
+
+-- ═════ 23. Classements : départage et filtres ═════
+:E
+select t.adm('enregistrer_competition','{"nom":"Tournoi départage","type":"Championnat","publie":true}')->>'id' as cd \gset
+select t.adm('enregistrer_equipe','{"nom":"Alpha"}')->>'id' as ea \gset
+select t.adm('enregistrer_equipe','{"nom":"Beta"}')->>'id' as eb \gset
+select t.adm('enregistrer_equipe','{"nom":"Gamma"}')->>'id' as ec \gset
+select t.adm('enregistrer_match',jsonb_build_object('competition_id',:'cd','domicile_id',:'ea','exterieur_id',:'ec','date_match',(now()-interval '3 days')::text,'publie',true))->>'id' as d1 \gset
+select t.adm('score',jsonb_build_object('id',:'d1','revision',t.rev(:'d1'),'statut','Terminé','score_domicile',1,'score_exterieur',0));
+select t.adm('enregistrer_match',jsonb_build_object('competition_id',:'cd','domicile_id',:'eb','exterieur_id',:'ec','date_match',(now()-interval '2 days')::text,'publie',true))->>'id' as d2 \gset
+select t.adm('score',jsonb_build_object('id',:'d2','revision',t.rev(:'d2'),'statut','Terminé','score_domicile',3,'score_exterieur',2));
+select t.adm('enregistrer_match',jsonb_build_object('competition_id',:'cd','domicile_id',:'ea','exterieur_id',:'eb','date_match',(now()-interval '1 days')::text,'publie',false))->>'id' as d3 \gset
+select t.adm('score',jsonb_build_object('id',:'d3','revision',t.rev(:'d3'),'statut','Terminé','score_domicile',5,'score_exterieur',0));
+reset role;
+select t.ok((select array_agg(r->'equipe'->>'nom' order by (r->>'rang')::int) from jsonb_array_elements(koki_foot.classement(:'cd','')) r)=array['Beta','Alpha','Gamma'],'départage : points égaux, différence égale, buts marqués (Beta 3 > Alpha 1)');
+select t.ok((select (r->>'joues')::int from jsonb_array_elements(koki_foot.classement(:'cd','')) r where r->'equipe'->>'nom'='Alpha')=1,'match non publié exclu du classement');
+
+-- ═════ 24. Sécurité : recontrôle ═════
+select t.ok(not exists(select 1 from pg_policies where schemaname='koki_foot') and not exists(select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='koki_foot' and c.relkind='r' and not c.relrowsecurity),'RLS active partout, aucune politique (refus par défaut)');
+select t.ok((select bool_and(p.prosecdef) from pg_proc p where p.oid in ('public.koki_foot_public(text,jsonb)'::regprocedure,'public.koki_foot_admin(text,jsonb)'::regprocedure,'public.koki_foot_sync(text,jsonb)'::regprocedure)),'points d''entrée en SECURITY DEFINER');
+select t.ok(not exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='koki_foot' and (has_function_privilege('anon',p.oid,'execute') or has_function_privilege('authenticated',p.oid,'execute') or has_function_privilege('service_role',p.oid,'execute'))),'nouvelles fonctions internes (périodes, sources, horaires, journal) non exécutables hors propriétaire');
+select t.ok(not exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='koki_foot' and p.prosecdef and not coalesce(p.proconfig,'{}')@>array['search_path=""']),'toutes les fonctions SECURITY DEFINER : search_path vide');
+select t.ok(not exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname like 'koki_foot%' and p.proname not in ('koki_foot_public','koki_foot_admin','koki_foot_sync')),'aucun autre point d''entrée public');
+
+-- ═════ 25. Journal chaîné : intégrité et limites ═════
+select t.ok(koki_foot.verifier_journal() is null,'journal intact : chaîne d''empreintes valide');
+select t.ok((select count(*)=count(empreinte) from koki_foot.corrections),'chaque correction porte son empreinte');
+select min(id) as cible from koki_foot.corrections where motif<>'' \gset
+-- Simulation d'un propriétaire malveillant : déclencheurs désactivés, ligne modifiée.
+alter table koki_foot.corrections disable trigger corrections_ajout_seul;
+update koki_foot.corrections set motif='réécrit' where id=:cible;
+alter table koki_foot.corrections enable trigger corrections_ajout_seul;
+select t.ok(koki_foot.verifier_journal()=:cible,'altération par le propriétaire (déclencheurs contournés) détectée');
+alter table koki_foot.corrections disable trigger corrections_ajout_seul;
+delete from koki_foot.corrections where id=:cible+1;
+alter table koki_foot.corrections enable trigger corrections_ajout_seul;
+select t.ok(koki_foot.verifier_journal() is not null,'suppression d''une ligne détectée');
+:E
+select t.ok((t.adm('verifier_journal')->>'premiere_alteration')::bigint=:cible,'administration : vérification du journal disponible');
+reset role;
 
 reset role;
 select format('Tests réussis : %s', count(*)) from t.journal \gset
