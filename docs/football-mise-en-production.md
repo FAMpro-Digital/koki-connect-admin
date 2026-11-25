@@ -92,3 +92,17 @@ le logo est absent. Demande : bucket, quota de stockage et droits d'usage des lo
 7. Abonnement éventuel à un fournisseur (API-Football) et dépôt de la clé en variable d'environnement.
 8. Création du dépôt d'ancrage, de ses secrets et du workflow quotidien ; choix du service de courriel.
 9. Protection de la branche `main` de `koki-connect-admin` et compléments du ruleset de `koki-connect`.
+
+## 7. Journal d'exécution — mise en production du 25/11/2026 (autorisée par le propriétaire)
+
+| Heure (Koki) | Opération | Vérification |
+|---|---|---|
+| 06:15 | Empreinte de production avant migration | 12 catégories identiques à la référence du 20/11 (570 objets) |
+| 06:17 | Sauvegarde en base : schéma privé `koki_sauvegarde_20261125` (copie des 56 tables de `public`, `koki_private`, `koki_social_private`, `koki_sport` ; 731 lignes ; table `_controle` avec nombre de lignes et empreinte MD5 par table) | 56/56 copies identiques à leur source ; aucun accès API (droits retirés, RLS) |
+| 06:17 | Migration `foot_schema_20261201000500` | objets `koki_foot` identiques (fonctions, contraintes, colonnes, index, déclencheurs) à la construction testée ; 0 table sans RLS ; 0 droit direct |
+| 06:24 | `main` protégée sur les deux dépôts (rulesets) | relu par l'API `rules/branches/main` |
+| 06:36 | Migration `foot_acces_20261201000600` | fonctions identiques à la construction testée ; droits RPC : public → anon, authenticated ; admin → authenticated ; sync → service_role ; 0 droit sur les fonctions internes ; essais en rôle réel : anon admin/sync/table refusés (42501), authentifié sans droits refusé (42501) ; 570/570 objets existants inchangés |
+| 06:40 | Migration `foot_canal_prive_20261201000700` (double émission + politique d'écoute) | essai HÉBERGÉ depuis www.kokiconnect.com avec la clé `sb_publishable_` : abonnements public et privé acceptés, message de la base reçu sur les DEUX canaux ; message d'un client anonyme sur le canal privé NON relayé |
+
+Retour arrière : `propositions/retour-20261201000700_foot_canal_prive.sql`, puis `retour/20261201000600_foot_acces.sql`,
+puis `retour/20261201000500_foot_schema.sql`. Données : `koki_sauvegarde_20261125` (comparaison par `_controle`).
