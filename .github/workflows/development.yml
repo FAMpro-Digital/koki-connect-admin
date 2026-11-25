@@ -76,6 +76,12 @@ jobs:
           PGUSER: runner
           PGDATABASE: postgres
         run: bash supabase/historique/outils/tester-foot.sh
+      - name: Football module — API-Football connector and planning proposals (local database, simulated provider)
+        env:
+          PGHOST: /var/run/postgresql
+          PGUSER: runner
+          PGDATABASE: postgres
+        run: bash supabase/historique/outils/tester-foot-api.sh
       - name: Football module — admin client integration with local PostgreSQL
         run: node --test tests/foot-admin-client.test.js
 
@@ -113,6 +119,12 @@ jobs:
           PGUSER: runner
           PGDATABASE: postgres
         run: bash supabase/historique/outils/tester-foot.sh
+      - name: Football module on PostgreSQL 17 — API-Football connector and planning proposals
+        env:
+          PGHOST: /var/run/postgresql
+          PGUSER: runner
+          PGDATABASE: postgres
+        run: bash supabase/historique/outils/tester-foot-api.sh
 
   foot-essais-reels:
     # Essais RÉELS d'authentification (MFA TOTP) et de Realtime dans un Supabase LOCAL ÉPHÉMÈRE (Docker du runner) :
