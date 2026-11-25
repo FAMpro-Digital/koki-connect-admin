@@ -1,0 +1,54 @@
+/* Module Football — administration (téléphone d'abord). */
+.fa-entete h1 { margin: 0 0 8px; font-size: 22px; }
+.fa-onglets { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.fa-onglet { flex: none; min-height: 40px; padding: 8px 12px; border: 1px solid #cfe0d6; border-radius: 999px; background: #fff; font: inherit; font-weight: 600; color: #0b5a3c; cursor: pointer; }
+.fa-onglet[aria-current="true"] { background: #0b5a3c; color: #fff; border-color: #0b5a3c; }
+.fa-corps { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.fa-titre { margin: 12px 0 4px; font-size: 17px; }
+.fa-periode { margin: 10px 0 4px; font-size: 13px; text-transform: uppercase; color: #55635b; }
+.fa-liste { display: flex; flex-direction: column; gap: 8px; }
+.fa-ligne { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; padding: 12px; border: 1px solid #e1ebe5; border-radius: 12px; background: #fff; font: inherit; text-align: left; cursor: pointer; }
+.fa-ligne-fixe { cursor: default; }
+.fa-ligne-direct { box-shadow: inset 4px 0 0 #d62828; }
+.fa-sous { margin: 0; font-size: 13px; color: #55635b; }
+.fa-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.fa-badge { padding: 2px 8px; border-radius: 999px; background: #e3ede6; color: #0b5a3c; font-size: 12px; }
+.fa-badge-verrou { background: #e8eefc; color: #1e3a8a; }
+.fa-badge-alerte { background: #fdecea; color: #8c1d18; }
+.fa-tableau { padding: 14px; border-radius: 14px; background: #0b5a3c; color: #fff; }
+.fa-tableau .fa-sous { color: #dcefe4; }
+.fa-face { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin: 8px 0; text-align: center; }
+.fa-score { font-size: 32px; font-weight: 700; }
+.fa-bloc { padding: 12px; border: 1px solid #e1ebe5; border-radius: 12px; background: #fff; display: flex; flex-direction: column; gap: 8px; }
+.fa-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+.fa-grille-2 { grid-template-columns: 1fr 1fr; }
+.fa-bouton { min-height: 48px; padding: 10px 12px; border: 0; border-radius: 12px; background: #0b5a3c; color: #fff; font: inherit; font-weight: 600; cursor: pointer; touch-action: manipulation; }
+.fa-bouton[disabled] { opacity: .55; cursor: progress; }
+.fa-bouton-principal { width: 100%; }
+.fa-bouton-clair { background: #e3ede6; color: #0b5a3c; }
+.fa-bouton-danger { min-height: 40px; background: #fdecea; color: #8c1d18; }
+.fa-bouton-equipe { min-height: 56px; font-size: 16px; }
+.fa-bouton-statut.fa-actif { outline: 3px solid #f28c28; }
+.fa-lien { align-self: flex-start; border: 0; background: none; color: #0b5a3c; font: inherit; font-weight: 600; padding: 8px 0; cursor: pointer; }
+.fa-champ { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.fa-champ input, .fa-champ select { min-height: 44px; padding: 8px; border: 1px solid #cfe0d6; border-radius: 10px; font: inherit; background: #fff; }
+.fa-champ input[type="checkbox"] { min-height: 24px; width: 24px; }
+.fa-champ input[type="color"] { padding: 2px; width: 64px; }
+.fa-form { display: flex; flex-direction: column; gap: 8px; }
+.fa-score-ligne { display: grid; grid-template-columns: 1fr 72px 72px; align-items: center; gap: 6px; }
+.fa-score-ligne input { min-height: 44px; padding: 6px; border: 1px solid #cfe0d6; border-radius: 10px; font: inherit; text-align: center; }
+.fa-motif { width: 100%; }
+.fa-evt { display: grid; grid-template-columns: 44px 1fr; gap: 4px 8px; align-items: center; padding: 8px; border-radius: 10px; background: #f4f8f6; }
+.fa-evt > :nth-child(3) { grid-column: 2; font-size: 13px; color: #3b4a42; }
+.fa-evt > .fa-badge { grid-column: 1; justify-self: start; }
+.fa-evt > button { grid-column: 2; justify-self: end; }
+.fa-conflit { padding: 12px; border: 1px solid #f2c4bd; border-radius: 12px; background: #fff; display: flex; flex-direction: column; gap: 6px; overflow-wrap: anywhere; }
+.fa-conflit input { min-height: 44px; padding: 8px; border: 1px solid #cfe0d6; border-radius: 10px; font: inherit; }
+.fa-avis { padding: 10px 12px; border-radius: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fa-avis-succes { background: #e3f4ea; color: #0b5a3c; }
+.fa-avis-erreur, .fa-avis-droits { background: #fdecea; color: #8c1d18; }
+.fa-avis-reseau { background: #fff4e5; color: #8a4b00; }
+.fa-avis-revision { background: #e8eefc; color: #1e3a8a; }
+.fa-hors-ligne { margin: 0 0 6px; padding: 8px; border-radius: 10px; background: #fff4e5; color: #8a4b00; font-size: 13px; }
+.fa-vide, .fa-chargement { padding: 12px; border: 1px dashed #cfe0d6; border-radius: 12px; color: #55635b; }
+.fa-pastille { display: inline-block; width: 24px; height: 24px; border-radius: 50%; }

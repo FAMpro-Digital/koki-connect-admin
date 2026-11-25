@@ -76,7 +76,8 @@
       "etape1/separation-environnements": false,
       "develop/clubs-academies": false,
       "fix/clubs-contrat-global": false,
-      "develop/affichage-responsable": false
+      "develop/affichage-responsable": false,
+      "feature/module-football": false
     }
   }
 }

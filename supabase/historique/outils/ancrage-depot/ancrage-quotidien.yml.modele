@@ -1,0 +1,41 @@
+# MODÈLE — à copier dans le dépôt PRIVÉ d'ancrage (.github/workflows/ancrage-quotidien.yml) APRÈS autorisation.
+# Il n'est exécuté nulle part tant qu'il reste dans ce dossier.
+name: Ancrage quotidien du journal Football
+on:
+  schedule: [{cron: '55 23 * * *'}]   # 23 h 55 à Koki (UTC+0)
+  workflow_dispatch: {}
+permissions: {contents: write}
+concurrency: {group: ancrage, cancel-in-progress: false}
+jobs:
+  ancrer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: ancrage            # secrets limités à cet environnement
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with: {repository: FAMpro-Digital/koki-connect-admin, ref: main, path: outil, sparse-checkout: scripts/ancrage-journal.mjs, persist-credentials: false}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with: {node-version: '24'}
+      - name: Lire, contrôler la continuité, signer, vérifier la série
+        env:
+          KOKI_SUPABASE_URL: ${{ secrets.KOKI_SUPABASE_URL }}
+          KOKI_SERVICE_KEY: ${{ secrets.KOKI_SERVICE_KEY }}
+          CLE: ${{ secrets.KOKI_ANCRAGE_CLE_PEM }}
+        run: |
+          umask 077; printf '%s' "$CLE" > "$RUNNER_TEMP/cle.pem"
+          prec=$(ls recus/*/*/*.json 2>/dev/null | sort | tail -1 || true)
+          jour=recus/$(date -u +%Y/%m/%d).json; mkdir -p "$(dirname "$jour")"
+          KOKI_ANCRAGE_CLE="$RUNNER_TEMP/cle.pem" node outil/scripts/ancrage-journal.mjs lire $prec > "$RUNNER_TEMP/recu.json"
+          mv "$RUNNER_TEMP/recu.json" "$jour"
+          node outil/scripts/ancrage-journal.mjs suite trousseau.json $(ls recus/*/*/*.json | sort | tail -30)
+          rm -f "$RUNNER_TEMP/cle.pem"
+      - name: Archiver le reçu (historique non réécrivable : branche protégée)
+        run: |
+          git add recus
+          git -c user.name=ancrage -c user.email=ancrage@koki.invalid commit -m "Ancrage $(date -u +%F)"
+          git push
+      # Seconde copie indépendante : à brancher sur le service choisi par le propriétaire
+      # (courriel à la direction FAMpro, ou second dépôt privé sous un autre compte).
+      # Tout échec ci-dessus (journal altéré, RÉÉCRIT, TRONQUÉ, lecture impossible) fait échouer le job :
+      # GitHub notifie le propriétaire et AUCUN reçu n'est écrit.
