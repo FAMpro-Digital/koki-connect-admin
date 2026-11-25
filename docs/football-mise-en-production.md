@@ -104,5 +104,13 @@ le logo est absent. Demande : bucket, quota de stockage et droits d'usage des lo
 | 06:36 | Migration `foot_acces_20261201000600` | fonctions identiques à la construction testée ; droits RPC : public → anon, authenticated ; admin → authenticated ; sync → service_role ; 0 droit sur les fonctions internes ; essais en rôle réel : anon admin/sync/table refusés (42501), authentifié sans droits refusé (42501) ; 570/570 objets existants inchangés |
 | 06:40 | Migration `foot_canal_prive_20261201000700` (double émission + politique d'écoute) | essai HÉBERGÉ depuis www.kokiconnect.com avec la clé `sb_publishable_` : abonnements public et privé acceptés, message de la base reçu sur les DEUX canaux ; message d'un client anonyme sur le canal privé NON relayé |
 
+| 06:5x | Fusion PR #63 (admin, 3c222c3) et #144 (public, 40a236d) après contrôles verts | déploiements Vercel de production « Ready » sur les deux projets |
+| 07:1x | Vercel admin : `VITE_KOKI_FOOT_ADMIN=true` (Production, type Config) puis redéploiement sans cache | déploiement « Ready » ; le paquet servi par koki-connect-admin.vercel.app contient l'écran Football. Une entrée parasite `VITE_KOKI_FOOT_ADMINVITE_KOKI_FOOT_ADMIN` (saisie doublée, lue par aucun code) reste à supprimer par le propriétaire |
+| 07:2x | PR #145 : `modules.football=true` (+ 3 tests de configuration publiée) ; contrôles `verify`, `lint`, `e2e` verts ; fusion c6e6890 | production publique « Ready » ; `KokiFoot.visible=true` ; onglet Football, filtres Tout/Koki/Sénégal/International, vues En direct, Aujourd'hui, Résultats, Calendrier, Compétitions, Classements affichées (aucune donnée publiée) ; mobile 375 px sans débordement |
+| 07:3x | Réception HÉBERGÉE par le client déployé (canal privé) | signal envoyé par la base sur le canal privé seul → rechargement `koki_foot_public` du client ; signal envoyé sur le canal public seul → aucune réaction (le client n'écoute que le canal privé) |
+| 07:3x | Migration `foot_canal_public_fin_20261201000710` | émission unique (privée) vérifiée dans `realtime.messages` ; client déployé toujours servi |
+
+Retour arrière du canal : réappliquer `propositions/20261201000700_foot_canal_prive.sql` (rétablit la double émission), puis, côté site, `assets/business/config.json › football_canal = "public"`.
+
 Retour arrière : `propositions/retour-20261201000700_foot_canal_prive.sql`, puis `retour/20261201000600_foot_acces.sql`,
 puis `retour/20261201000500_foot_schema.sql`. Données : `koki_sauvegarde_20261125` (comparaison par `_controle`).
